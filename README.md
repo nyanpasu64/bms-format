@@ -1,8 +1,8 @@
 # BMS Format Spec
 
-A project to document and decode GameCube BMS sequences
+A project to document and decode GameCube BMS sequences.
 
-# Credits:
+## Credits:
 
 * bms1.c
 	* <http://kuribo64.net/board/thread.php?id=2363>
