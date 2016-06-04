@@ -1,88 +1,93 @@
-#!/usr/bin/env python3
-
-import click
+# @register(0xc1)
+# def thread(
 from collections import OrderedDict
+from functools import wraps, partial
+from types import MethodType
+from typing import Callable, Any, Dict
 
-from typing import List
-
-from util import LOGGER, LOG
 from utils.pointer import Pointer
 
-class BmsError(ValueError):
+Function = Callable[..., Any]
+
+
+
+class BmsError(Exception):
     pass
 
-BmsTrack = List[List]
+
+
+# Unbound methods.
+handlers = {}    # type: Dict[int, Function]
 
 
 
 
+
+def register(event: int):
+    def _register(func:Function):
+        handlers[event] = func
+        return func
+    return _register
+
+
+# **** BEGIN EVENTS
+
+@register(0xC1)
+def call_thread(self, addr):
+    with self.pushpop(addr) as ptr:
+        return self.parse(ptr)
+
+@register()
+
+
+# **** BEGIN CLASS
 
 class BmsFile:
     def __init__(self):
-        # track numbers
-        self.tracks = {}
-        self.pstack = []    # TODO pstack
 
-    def parse(self, data: bytes):
+        # Bind methods.
+        self.handlers = {}
+        self._stack = []
+
+        for event, handler in handlers.items():
+            self.handlers[event] = MethodType(handler, self)
+
+        self.output = OrderedDict()
+
+    def load(self, data: bytes):
         self.data = data
-        self._parse(tracknum=-1, addr=0, depth=0)
-        return self
+        # TODO
 
-    # self.stack[ptr]?
-    # loop parse?
-    # methods:
-    #   ptr = self.top()
-
-    def _parse(self, *, tracknum, addr, depth): # -> (int, BmsTrack):
-        """ Return: something, track """
+    def parse(self, addr:int, depth:int):
         ptr = Pointer(self.data, addr)
-        # track = []
-        # notes = []
 
-        while True:
-            ev = LOG(ptr.u8(), 'ev')
+        result = []
 
-            # **** NEW TRACK
-            # this will be split off into an outside call
-            # self.notes is per-track, but not per-loop
+        while 1:
+            # Evaluate command, and push subtrees into $result.
 
-            if ev == 0xC1:
-                type = 'start'
-                kwargs = {
-                    'tracknum': ptr.u8(),
-                    'addr': ptr.u24()
-                }
-                LOG(kwargs, '>')
+            ev = ptr.u8()
 
-                # self._parse(**kwargs, depth=depth+1)
+            if ev not in self.handlers:
+                raise BmsError
 
-            # **** END TRACK
-            elif ev == 0xFF:
+            tree, stop = self.handlers[ev]()
+            result.append(tree)
+
+            if stop:
                 break
 
 
-            elif ev < 0x80:
-                kwargs = {
-                    'poly_id': ptr.u8(),
-                    'note': ev,
-                    'velocity': ptr.u8()
-                }
+    def pushpop(self, addr: int) -> Pointer:
+        ptr = Pointer(addr)
+        self.push(ptr)
+        yield ptr
 
-                track.append(['note_on', note, velocity])
-                notes[poly_id] = note
+        return self.pop()
 
-        self.tracks[tracknum] = track
+    def push(self, frame: Pointer) -> Pointer:
+        self._stack.append(frame)
+        return frame
 
-
-
-@click.command()
-@click.argument('inpath')
-def parse(inpath):
-    with open(inpath, 'rb') as f:
-        data = f.read()
-
-
-if __name__ == '__main__':
-    parse()
-
-OrderedDict()
+    def pop(self) -> Pointer:
+        return self._stack.pop()
