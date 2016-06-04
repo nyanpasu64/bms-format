@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+<head>
+  <title></title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <style type="text/css">
+td.linenos { background-color: #f0f0f0; padding-right: 10px; }
+span.lineno { background-color: #f0f0f0; padding: 0 5px 0 5px; }
+pre { line-height: 125%; }
+body .hll { background-color: #ffffcc }
+body  { background: #f8f8f8; }
+body .c { color: #8f5902; font-style: italic } /* Comment */
+body .err { color: #a40000; border: 1px solid #ef2929 } /* Error */
+body .g { color: #000000 } /* Generic */
+body .k { color: #204a87; font-weight: bold } /* Keyword */
+body .l { color: #000000 } /* Literal */
+body .n { color: #000000 } /* Name */
+body .o { color: #ce5c00; font-weight: bold } /* Operator */
+body .x { color: #000000 } /* Other */
+body .p { color: #000000; font-weight: bold } /* Punctuation */
+body .ch { color: #8f5902; font-style: italic } /* Comment.Hashbang */
+body .cm { color: #8f5902; font-style: italic } /* Comment.Multiline */
+body .cp { color: #8f5902; font-style: italic } /* Comment.Preproc */
+body .cpf { color: #8f5902; font-style: italic } /* Comment.PreprocFile */
+body .c1 { color: #8f5902; font-style: italic } /* Comment.Single */
+body .cs { color: #8f5902; font-style: italic } /* Comment.Special */
+body .gd { color: #a40000 } /* Generic.Deleted */
+body .ge { color: #000000; font-style: italic } /* Generic.Emph */
+body .gr { color: #ef2929 } /* Generic.Error */
+body .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+body .gi { color: #00A000 } /* Generic.Inserted */
+body .go { color: #000000; font-style: italic } /* Generic.Output */
+body .gp { color: #8f5902 } /* Generic.Prompt */
+body .gs { color: #000000; font-weight: bold } /* Generic.Strong */
+body .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+body .gt { color: #a40000; font-weight: bold } /* Generic.Traceback */
+body .kc { color: #204a87; font-weight: bold } /* Keyword.Constant */
+body .kd { color: #204a87; font-weight: bold } /* Keyword.Declaration */
+body .kn { color: #204a87; font-weight: bold } /* Keyword.Namespace */
+body .kp { color: #204a87; font-weight: bold } /* Keyword.Pseudo */
+body .kr { color: #204a87; font-weight: bold } /* Keyword.Reserved */
+body .kt { color: #204a87; font-weight: bold } /* Keyword.Type */
+body .ld { color: #000000 } /* Literal.Date */
+body .m { color: #0000cf; font-weight: bold } /* Literal.Number */
+body .s { color: #4e9a06 } /* Literal.String */
+body .na { color: #c4a000 } /* Name.Attribute */
+body .nb { color: #204a87 } /* Name.Builtin */
+body .nc { color: #000000 } /* Name.Class */
+body .no { color: #000000 } /* Name.Constant */
+body .nd { color: #5c35cc; font-weight: bold } /* Name.Decorator */
+body .ni { color: #ce5c00 } /* Name.Entity */
+body .ne { color: #cc0000; font-weight: bold } /* Name.Exception */
+body .nf { color: #000000 } /* Name.Function */
+body .nl { color: #f57900 } /* Name.Label */
+body .nn { color: #000000 } /* Name.Namespace */
+body .nx { color: #000000 } /* Name.Other */
+body .py { color: #000000 } /* Name.Property */
+body .nt { color: #204a87; font-weight: bold } /* Name.Tag */
+body .nv { color: #000000 } /* Name.Variable */
+body .ow { color: #204a87; font-weight: bold } /* Operator.Word */
+body .w { color: #f8f8f8; text-decoration: underline } /* Text.Whitespace */
+body .mb { color: #0000cf; font-weight: bold } /* Literal.Number.Bin */
+body .mf { color: #0000cf; font-weight: bold } /* Literal.Number.Float */
+body .mh { color: #0000cf; font-weight: bold } /* Literal.Number.Hex */
+body .mi { color: #0000cf; font-weight: bold } /* Literal.Number.Integer */
+body .mo { color: #0000cf; font-weight: bold } /* Literal.Number.Oct */
+body .sb { color: #4e9a06 } /* Literal.String.Backtick */
+body .sc { color: #4e9a06 } /* Literal.String.Char */
+body .sd { color: #8f5902; font-style: italic } /* Literal.String.Doc */
+body .s2 { color: #4e9a06 } /* Literal.String.Double */
+body .se { color: #4e9a06 } /* Literal.String.Escape */
+body .sh { color: #4e9a06 } /* Literal.String.Heredoc */
+body .si { color: #4e9a06 } /* Literal.String.Interpol */
+body .sx { color: #4e9a06 } /* Literal.String.Other */
+body .sr { color: #4e9a06 } /* Literal.String.Regex */
+body .s1 { color: #4e9a06 } /* Literal.String.Single */
+body .ss { color: #4e9a06 } /* Literal.String.Symbol */
+body .bp { color: #3465a4 } /* Name.Builtin.Pseudo */
+body .vc { color: #000000 } /* Name.Variable.Class */
+body .vg { color: #000000 } /* Name.Variable.Global */
+body .vi { color: #000000 } /* Name.Variable.Instance */
+body .il { color: #0000cf; font-weight: bold } /* Literal.Number.Integer.Long */
+
+  </style>
+</head>
+<body>
+<h2></h2>
+
+<div class="highlight"><pre style="white-space:pre-wrap;tab-size:4;-moz-tab-size:4;"><span></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+
+<span class="kt">int</span> <span class="n">notes</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+<span class="kt">int</span> <span class="n">tracknum</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">delay</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">basedelay</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">tracksz</span><span class="p">[</span><span class="mi">16</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+<span class="kt">int</span> <span class="n">savepos</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">inmain</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span>
+
+<span class="k">enum</span> <span class="n">branch</span>
+<span class="p">{</span>
+	<span class="n">BR_NORMAL</span><span class="p">,</span>
+	<span class="n">BR_C1</span><span class="p">,</span>
+	<span class="n">BR_FF</span>
+<span class="p">};</span>
+
+
+<span class="kt">void</span> <span class="nf">dtime</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span> <span class="n">fout</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">delay</span><span class="o">&lt;=</span><span class="mh">0x7F</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">putc</span><span class="p">(</span><span class="n">delay</span><span class="p">,</span><span class="n">fout</span><span class="p">);</span>
+		<span class="n">tracksz</span><span class="p">[</span><span class="n">tracknum</span><span class="p">]</span><span class="o">+=</span><span class="mi">4</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">delay</span><span class="o">&lt;=</span><span class="mh">0x3FFF</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">putc</span><span class="p">(</span><span class="mh">0x80</span><span class="o">+</span><span class="p">(</span><span class="n">delay</span><span class="o">&gt;&gt;</span><span class="mi">7</span><span class="p">),</span><span class="n">fout</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="n">delay</span><span class="o">&amp;</span><span class="mh">0x7F</span><span class="p">,</span><span class="n">fout</span><span class="p">);</span>
+		<span class="n">tracksz</span><span class="p">[</span><span class="n">tracknum</span><span class="p">]</span><span class="o">+=</span><span class="mi">5</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">delay</span><span class="o">&lt;=</span><span class="mh">0x1FFFFF</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">putc</span><span class="p">(</span><span class="mh">0x80</span><span class="o">+</span><span class="p">(</span><span class="n">delay</span><span class="o">&gt;&gt;</span><span class="mi">14</span><span class="p">),</span><span class="n">fout</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="mh">0x80</span><span class="o">+</span><span class="p">((</span><span class="n">delay</span><span class="o">&gt;&gt;</span><span class="mi">7</span><span class="p">)</span><span class="o">&amp;</span><span class="mh">0x7F</span><span class="p">),</span><span class="n">fout</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="n">delay</span><span class="o">&amp;</span><span class="mh">0x7F</span><span class="p">,</span><span class="n">fout</span><span class="p">);</span>
+		<span class="n">tracksz</span><span class="p">[</span><span class="n">tracknum</span><span class="p">]</span><span class="o">+=</span><span class="mi">6</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">delay</span><span class="o">&lt;=</span><span class="mh">0xFFFFFFF</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">putc</span><span class="p">(</span><span class="mh">0x80</span><span class="o">+</span><span class="p">(</span><span class="n">delay</span><span class="o">&gt;&gt;</span><span class="mi">21</span><span class="p">),</span><span class="n">fout</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="mh">0x80</span><span class="o">+</span><span class="p">((</span><span class="n">delay</span><span class="o">&gt;&gt;</span><span class="mi">14</span><span class="p">)</span><span class="o">&amp;</span><span class="mh">0x7F</span><span class="p">),</span><span class="n">fout</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="mh">0x80</span><span class="o">+</span><span class="p">((</span><span class="n">delay</span><span class="o">&gt;&gt;</span><span class="mi">7</span><span class="p">)</span><span class="o">&amp;</span><span class="mh">0x7F</span><span class="p">),</span><span class="n">fout</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="n">delay</span><span class="o">&amp;</span><span class="mh">0x7F</span><span class="p">,</span><span class="n">fout</span><span class="p">);</span>
+		<span class="n">tracksz</span><span class="p">[</span><span class="n">tracknum</span><span class="p">]</span><span class="o">+=</span><span class="mi">7</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+
+<span class="kt">int</span> <span class="nf">parse_ev</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span> <span class="n">fin</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span> <span class="n">ftemp</span><span class="p">)</span>
+<span class="p">{</span>
+			<span class="kt">int</span> <span class="n">ev</span> <span class="o">=</span> <span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">);</span>
+			<span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">&lt;</span><span class="mh">0x80</span><span class="p">)</span>
+			<span class="p">{</span>
+				<span class="n">dtime</span><span class="p">(</span><span class="n">ftemp</span><span class="p">);</span>
+
+				<span class="n">putc</span><span class="p">(</span><span class="mh">0x90</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+				<span class="kt">int</span> <span class="n">note</span> <span class="o">=</span> <span class="n">ev</span><span class="p">;</span>
+				<span class="n">putc</span><span class="p">(</span><span class="n">note</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+				<span class="kt">int</span> <span class="n">ppid</span> <span class="o">=</span> <span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">);</span>
+				<span class="n">notes</span><span class="p">[</span><span class="n">ppid</span><span class="p">]</span><span class="o">=</span><span class="n">note</span><span class="p">;</span>
+				<span class="kt">int</span> <span class="n">vol</span> <span class="o">=</span> <span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">);</span>
+				<span class="n">putc</span><span class="p">(</span><span class="n">vol</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+				<span class="n">delay</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+			<span class="p">}</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0x80</span><span class="p">)</span>
+			<span class="p">{</span>
+				<span class="k">if</span><span class="p">(</span><span class="n">inmain</span><span class="o">==</span><span class="mi">1</span><span class="p">)</span> <span class="n">basedelay</span><span class="o">+=</span><span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">);</span>
+				<span class="k">else</span> <span class="n">delay</span><span class="o">+=</span><span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">);</span>
+			<span class="p">}</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">&lt;</span><span class="mh">0x88</span><span class="p">)</span>
+			<span class="p">{</span>
+				<span class="n">dtime</span><span class="p">(</span><span class="n">ftemp</span><span class="p">);</span>
+
+				<span class="n">putc</span><span class="p">(</span><span class="mh">0x80</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+				<span class="kt">int</span> <span class="n">note</span> <span class="o">=</span> <span class="n">notes</span><span class="p">[</span><span class="n">ev</span><span class="o">&amp;</span><span class="mi">7</span><span class="p">];</span>
+				<span class="n">putc</span><span class="p">(</span><span class="n">note</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+				<span class="n">putc</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+				<span class="n">delay</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+			<span class="p">}</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0x88</span><span class="p">)</span>
+			<span class="p">{</span>
+				<span class="k">if</span><span class="p">(</span><span class="n">inmain</span><span class="o">==</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span><span class="n">basedelay</span> <span class="o">+=</span> <span class="p">(</span><span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">)</span><span class="o">&lt;&lt;</span><span class="mi">8</span><span class="p">)</span> <span class="o">+</span> <span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">);}</span>
+				<span class="k">else</span> <span class="p">{</span><span class="n">delay</span> <span class="o">+=</span> <span class="p">(</span><span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">)</span><span class="o">&lt;&lt;</span><span class="mi">8</span><span class="p">)</span> <span class="o">+</span> <span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">);}</span>
+			<span class="p">}</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0x98</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0x9A</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0x9C</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0x9E</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xA0</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xA3</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xA4</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xA5</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xA7</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xA9</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xAA</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xAC</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xAD</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xB1</span><span class="p">)</span>
+			<span class="p">{</span>
+				<span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+				<span class="kt">int</span> <span class="n">flag</span> <span class="o">=</span> <span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">);</span>
+				<span class="k">if</span><span class="p">(</span><span class="n">flag</span><span class="o">==</span><span class="mh">0x40</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+				<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">flag</span><span class="o">==</span><span class="mh">0x80</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="p">}</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xB8</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xC1</span><span class="p">)</span> <span class="k">return</span> <span class="n">BR_C1</span><span class="p">;</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xC2</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xC4</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xC5</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xC6</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xC7</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xC8</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xCB</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xCC</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xCF</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xD0</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xD1</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xD2</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xD5</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xD8</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span> <span class="c1">// NEW!</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xDA</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xDB</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xDD</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xDF</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xE0</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span> <span class="c1">// WAS 3</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xE2</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span> <span class="c1">// NEW!</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xE3</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span> <span class="c1">// NEW!</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xE6</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xE7</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xEF</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xF0</span><span class="p">)</span>
+			<span class="p">{</span>
+				<span class="kt">int</span> <span class="n">value</span> <span class="o">=</span> <span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">);</span>
+				<span class="k">while</span><span class="p">(</span><span class="n">value</span><span class="o">&amp;</span><span class="mh">0x80</span><span class="p">)</span>
+				<span class="p">{</span>
+					<span class="n">value</span><span class="o">=</span><span class="p">(</span><span class="n">value</span><span class="o">&amp;</span><span class="mh">0x7F</span><span class="p">)</span><span class="o">&lt;&lt;</span><span class="mi">7</span><span class="p">;</span>
+					<span class="n">value</span><span class="o">+=</span><span class="n">getc</span><span class="p">(</span><span class="n">fin</span><span class="p">);</span>
+				<span class="p">}</span>
+				<span class="k">if</span><span class="p">(</span><span class="n">inmain</span><span class="o">==</span><span class="mi">1</span><span class="p">)</span> <span class="n">basedelay</span> <span class="o">+=</span> <span class="n">value</span><span class="p">;</span>
+				<span class="k">else</span> <span class="n">delay</span> <span class="o">+=</span> <span class="n">value</span><span class="p">;</span>
+			<span class="p">}</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xF1</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xF4</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xF9</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xFD</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xFE</span><span class="p">)</span> <span class="n">fseek</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">ev</span><span class="o">==</span><span class="mh">0xFF</span><span class="p">)</span> <span class="k">return</span> <span class="n">BR_FF</span><span class="p">;</span>
+			<span class="k">return</span> <span class="n">BR_NORMAL</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span> <span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="kt">FILE</span> <span class="o">*</span> <span class="n">fp</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="s">&quot;rb&quot;</span><span class="p">);</span>
+	<span class="kt">FILE</span> <span class="o">*</span> <span class="n">ftemp</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="s">&quot;TEMP&quot;</span><span class="p">,</span><span class="s">&quot;wb&quot;</span><span class="p">);</span>
+	<span class="kt">FILE</span> <span class="o">*</span> <span class="n">fp2</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="s">&quot;wb&quot;</span><span class="p">);</span>
+	<span class="k">while</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="kt">int</span> <span class="n">status</span> <span class="o">=</span> <span class="n">parse_ev</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+		<span class="k">if</span><span class="p">(</span><span class="n">status</span><span class="o">==</span><span class="n">BR_NORMAL</span><span class="p">);</span>
+		<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">status</span><span class="o">==</span><span class="n">BR_C1</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">fseek</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">SEEK_CUR</span><span class="p">);</span>
+			<span class="kt">long</span> <span class="n">offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">getc</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span><span class="o">&lt;&lt;</span><span class="mi">16</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">getc</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span><span class="o">&lt;&lt;</span><span class="mi">8</span><span class="p">)</span> <span class="o">+</span> <span class="n">getc</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
+			<span class="n">savepos</span><span class="o">=</span><span class="n">ftell</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
+			<span class="n">fseek</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span><span class="n">offset</span><span class="p">,</span><span class="n">SEEK_SET</span><span class="p">);</span>
+			<span class="n">inmain</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">status</span><span class="o">==</span><span class="n">BR_FF</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="k">if</span><span class="p">(</span><span class="n">inmain</span><span class="o">==</span><span class="mi">1</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+			<span class="k">else</span>
+			<span class="p">{</span>
+				<span class="n">tracksz</span><span class="p">[</span><span class="n">tracknum</span><span class="p">]</span><span class="o">+=</span><span class="mi">4</span><span class="p">;</span>
+				<span class="n">putc</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+				<span class="n">putc</span><span class="p">(</span><span class="mh">0xFF</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+				<span class="n">putc</span><span class="p">(</span><span class="mh">0x2F</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+				<span class="n">putc</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ftemp</span><span class="p">);</span>
+				<span class="n">delay</span><span class="o">=</span><span class="n">basedelay</span><span class="p">;</span>
+				<span class="n">fseek</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span><span class="n">savepos</span><span class="p">,</span><span class="n">SEEK_SET</span><span class="p">);</span>
+				<span class="n">tracknum</span><span class="o">++</span><span class="p">;</span>
+				<span class="n">inmain</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="n">fclose</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
+	<span class="n">fclose</span><span class="p">(</span><span class="n">ftemp</span><span class="p">);</span>
+	<span class="n">ftemp</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="s">&quot;TEMP&quot;</span><span class="p">,</span><span class="s">&quot;rb&quot;</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="sc">&#39;M&#39;</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="sc">&#39;T&#39;</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="sc">&#39;h&#39;</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="sc">&#39;d&#39;</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="n">tracknum</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">putc</span><span class="p">(</span><span class="mi">120</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="k">for</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">tracknum</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">putc</span><span class="p">(</span><span class="sc">&#39;M&#39;</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="sc">&#39;T&#39;</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="sc">&#39;r&#39;</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="sc">&#39;k&#39;</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">((</span><span class="n">tracksz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">&amp;</span><span class="mh">0xFF0000</span><span class="p">)</span><span class="o">&gt;&gt;</span><span class="mi">16</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">((</span><span class="n">tracksz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">&amp;</span><span class="mh">0xFF00</span><span class="p">)</span><span class="o">&gt;&gt;</span><span class="mi">8</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+		<span class="n">putc</span><span class="p">(</span><span class="n">tracksz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">&amp;</span><span class="mh">0xFF</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+		<span class="k">for</span><span class="p">(</span><span class="kt">int</span> <span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span><span class="o">&lt;</span><span class="n">tracksz</span><span class="p">[</span><span class="n">i</span><span class="p">];</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="kt">int</span> <span class="n">w</span> <span class="o">=</span> <span class="n">getc</span><span class="p">(</span><span class="n">ftemp</span><span class="p">);</span>
+			<span class="n">putc</span><span class="p">(</span><span class="n">w</span><span class="p">,</span><span class="n">fp2</span><span class="p">);</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="n">fclose</span><span class="p">(</span><span class="n">fp2</span><span class="p">);</span>
+	<span class="n">fclose</span><span class="p">(</span><span class="n">ftemp</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</body>
+</html>
