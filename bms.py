@@ -4,7 +4,7 @@ from typing import Callable, Any
 from typing import Dict
 from typing import List
 
-from util import get_tree, LOGGER
+from util import get_tree, LOG, b2h
 from utils.pointer import Pointer
 
 Function = Callable[..., Any]
@@ -33,43 +33,41 @@ class BmsEvent(dict):
 
 class BmsTrack(dict):
 
-    def __init__(self, data: bytes, **kwargs):
-        super().__init__(**kwargs)
-        self._data = data
+    def __init__(self, data: bytes, addr:int, tracknum:int):
+        super().__init__()
+        self.data = data
+        self.ptr = Pointer(data, addr)
 
         self['type'] = 'track'
-        self['children'] = {}   # type: Dict[int, BmsTrack]
-        self['track'] = []      # type: List[BmsEvent]
+        self['tracknum'] = tracknum
+        self['children'] = {tracknum: None}     # type: Dict[int, BmsTrack]
+        self['track'] = []                      # type: List[BmsEvent]
+
+        self.note_history = [None]*8
+
 
     def insert(self, cmd: str, **evdata: dict) -> dict:
         # Add "type=cmd".
         self['track'].append(BmsEvent(cmd, **evdata))
         return evdata
 
-    def parse(self, addr:int):
-
-        track = self['track']
-
+    def parse(self):
         insert = self.insert
 
-        # # Add out_dict to JSON parent.
-        # if tracknum in self.tracks:
-        #     raise BmsError('duplicate track numbers')
-        # self.tracks[tracknum] = out_dict
-
-        ptr = Pointer(self._data, addr)
+        track = self['track']
+        ptr = self.ptr
 
         stop = False
 
         while 1:
             ev = ptr.u8()
-            LOGGER.debug(hex(ev))
-
-            # **** FLOW COMMANDS
+            LOG.debug('%06X - %02X', ptr.addr-1, ev)
 
             old = None
             if track:
                 old = track[-1]
+
+            # **** FLOW COMMANDS
 
             if 0:
                 pass
@@ -77,17 +75,31 @@ class BmsTrack(dict):
             elif ev == 0xC1:
                 self.child(ptr)
 
-
             elif ev == 0xFF:
                 insert('end_track')
                 stop = True
 
-            # SPECIAL COMMANDS
+            # todo finish jump/call
+            elif ev == 0xC4:
+                insert('call',
+                       mode=ptr.u8(),
+                       addr=ptr.u24()
+                       )
+
+            elif ev == 0xC8:
+                insert('jump',
+                       mode=ptr.u8(),
+                       addr=ptr.u24()
+                       )
+
+            # **** SPECIAL COMMANDS
 
             elif ev == 0xE7:
-                insert('init',
-                       unknown = str(ptr.hexmagic('0000'))
-                       )
+                unknown = ptr.u16()
+                if unknown != 0:
+                    LOG.warn('Track init != 0x0000')
+
+                insert('init', unknown=unknown)
 
             elif ev in [0xA4, 0xAC]:
                 self.instr_change(ptr, ev)
@@ -98,14 +110,35 @@ class BmsTrack(dict):
             elif ev == 0xFD:
                 insert('tempo', value=ptr.u16())
 
+            elif ev == 0xE6:    # TODO unknown
+                msg = 'unknown [arookas]WriteRemovePool'
+                LOG.debug(msg)
+                insert(msg, unknown=ptr.u16())
+
             # **** NOTES
 
             elif ev < 0x80:
+                addr = ptr.addr
+                poly_id = ptr.u8()
+                note = ev
+                velocity = ptr.u8()
+
                 insert('note_on',
-                       poly_id = ptr.u8(),
-                       note = ev,
-                       velocity = ptr.u8()
+                       poly_id=poly_id,
+                       note=note,
+                       velocity=velocity
                        )
+
+                if poly_id >= 8:
+                    LOG.error('Invalid poly_id at %06X = %02X (%02X v=%02X)', addr, poly_id, note, velocity)
+                    # poly_id %= 8
+                else:
+                    self.note_history[poly_id] = note
+
+            elif ev in range(0x81, 0x88):
+                note = self.note_history[ev % 8]
+                insert('note_off', note=note)
+
 
             # **** CONTROL CHANGES
 
@@ -132,7 +165,7 @@ class BmsTrack(dict):
             # **** FALLBACK
 
             else:
-                insert('unknown event 0x%X' % ev)
+                insert('unknown event %s' % b2h(ev))
                 stop = True
 
             if track[-1] is None:
@@ -146,11 +179,6 @@ class BmsTrack(dict):
         return self
 
 
-
-    # Each track has a dict of children.
-    # children + child + grandchildren
-    # So check twice for errors.
-
     def child(self, ptr):
         tracknum = ptr.u8()
         addr = ptr.u24()
@@ -162,26 +190,33 @@ class BmsTrack(dict):
                     )
 
         # Parse
-        child = BmsTrack(self._data).parse(addr)
+        child = BmsTrack(self.data, addr, tracknum).parse()
 
         children = self['children']     # type: Dict[int, BmsTrack]
         grand = child['children']       # type: Dict[int, BmsTrack]
 
-        # Check for duplicates
-        # children + tracknum + grand
+        # Don't add child to children. That will create false-positive recursion.
 
-        # 2+3 = recursion
-        if tracknum in grand:
-            LOGGER.warn('Recursive child ')
+        # Check for duplicates
+        # Each track has a subtree dict.
+        # TODO: Do we need a separate "subtree" function? subtree ids only?
+        # .children{.tracknum...} + child.children{.tracknum...}
 
         # 1+2 = collision
         intersect = children.keys() & grand.keys()
         if intersect:
-            LOGGER.warn('Duplicate tracks %s', str(intersect))
+            LOG.warning('Duplicate tracks %s', str(intersect))
+            if self['tracknum'] in grand:
+                LOG.warning('Parent track collision %s', self['tracknum'])
+            if tracknum in children:
+                LOG.warning('Child track collision %s', tracknum)
 
-        children[tracknum] = child
+        # FIXME Uh, we're kinda overwriting grandchildren with children.
+        # But we don't overwrite children with self.
         children.update(grand)
-        grand.clear()
+        children[tracknum] = child
+        # grand.clear()
+        del child['children']
 
 
     def instr_change(self, ptr, ev):
@@ -203,43 +238,55 @@ class BmsTrack(dict):
         elif ev2 == 0x21:
             ev2 = 'patch'
         else:
-            LOGGER.warn('Unknown instr change %X %X %X', ev, ev2, value)
-            ev2 = hex(ev2)
+            LOG.info('[instr %s] Unknown type %02X %02X', b2h(ev), ev2, value)
+            ev2 = 'unknown %s' % b2h(ev2)
 
         self.insert('instr_change', ev2=ev2, value=value)
 
 
     def control_change(self, ptr, ev) -> BmsEvent:
-        # u8 BmsPerfType, u? value, us? length
+        # u8 cctype, [layout/4] value, [layout%4] duration
+
+        #        duration
+        #  val | 0    ?    u8   u16
+        # -----+---- ---- ---- -----
+        #  u8  | 94   95   96   97
+        #  s8  | 98   99   9a   9b
+        #  s16 | 9c   9d   9e   9f
+
         layout = ev - 0x94
 
         # READ CCTYPE
         cctype = ptr.u8()
-        try:
-            cctype = BmsPerfType(cctype)
-        except ValueError:
-            LOGGER.warn('[CC %X] Unknown control change 0x%X', ev, cctype)
 
         # READ VALUE
         values = [ptr.u8, ptr.s8, ptr.s16]
         value = values[layout // 4]()
 
         # READ LENGTH
-        lengths = [lambda: 0, None, ptr.u8, ptr.u16]
-        length = lengths[layout % 4]
+        durations = [lambda: 0, None, ptr.u8, ptr.u16]
+        duration = durations[layout % 4]
 
-        if length is not None:
-            length = length()
+        if duration is not None:
+            duration = duration()
         else:
-            length = None
-            LOGGER.warn('Unknown event 0x%X', ev)
+            duration = None
+            LOG.error('Unknown event 0x%s', b2h(ev))
 
-        LOGGER.debug('control change %X %X %X', cctype, value, length)
+        # FIX CCTYPE
+        try:
+            cctype = BmsPerfType(cctype)
+        except ValueError:
+            LOG.warning('[CC %s] Unknown control change %s = %s', b2h(ev), b2h(cctype), value)
+            cctype = 'unknown %s' % b2h(cctype)
+
+
+        LOG.debug('control change - %s, %02X, %02X', cctype, value, duration)
 
         self.insert('control_change',
                     cctype=cctype,
                     value=value,
-                    length=length
+                    length=duration
                     )
 
 
@@ -259,7 +306,7 @@ class BmsFile:
     def load(self, data: bytes):
         self.data = data
 
-        track = BmsTrack(data).parse(0)
+        track = BmsTrack(data, 0, tracknum=-1).parse()
 
         return track
 
