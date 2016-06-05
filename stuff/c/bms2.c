@@ -48,6 +48,7 @@ void dtime(FILE * fout) {
 
 int parse_ev(FILE * fin, FILE * ftemp)
 {
+			printf("%06X\n", ftell(fin));
 			int ev = getc(fin);
 			if(ev<0x80)
 			{
@@ -56,7 +57,9 @@ int parse_ev(FILE * fin, FILE * ftemp)
 				putc(0x90,ftemp);
 				int note = ev;
 				putc(note,ftemp);
+				printf("at %06X\n", ftell(fin));
 				int ppid = getc(fin);
+				printf(" ppid %02X\n", ppid);
 				notes[ppid]=note;
 				int vol = getc(fin);
 				putc(vol,ftemp);
