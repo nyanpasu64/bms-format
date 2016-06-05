@@ -18,9 +18,10 @@ See `bms.py`.
 
 * At some point, I'll add support for SNES/DS audio formats.
 * Build my own sequencer/DAW?
-    * In the future, I'll add a script-based editor, a GUI sequencer that manu, and an audio rendering engine.
-    * All operations are concatenated into a chain/process. Undos are handled in a tree, automatically committed on save.
+    * In the future, I'll add a script-based editor, a GUI sequencer, and an audio rendering engine.
+    * All operations are concatenated into a process script, which can be transparently viewed and edited as a tree (or text). Undos are handled in a version tree, and files are automatically committed on save.
         * "Undo" mean "last change" (programming), not "last operation" (conventional sequencers)?
+        * Undo repository state, or file state?
 
 I'm looking into Ruby, Rust, Go, etc. for code flexibility and/or type safety.
 
