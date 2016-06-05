@@ -8,7 +8,7 @@ func thread(addr) {
 	Loop: for {
 		switch ev {
 
-		// **** CALL THREAD
+		// **** CHILD THREAD
 		case 0xC1:
 			u8  track_id
 			u24 addr
@@ -73,17 +73,37 @@ func thread(addr) {
 			vlq tie		// 0b 1xxxxxxx 0xxxxxxx big-endian
 
 
+		// **** INSTRUMENTS
+
+		case 0xA4: drop 2	// [arookas] u8 instr_type, u8 value
+		                 	// 0x20 = bank, 0x21 = patch
+		                 	// 0x07 = ???
+
+		case 0xAC: drop 3	// [arookas] u8 instr_type, u16 value
+
+
 		// "Performances" (Arookas)
 
 		enum BmsPerfType : u8 {
 			VOLUME = 0,
 			PITCH = 1,
+			UNKNOWN = 2,	// UNKNOWN
 			PAN = 3
+			UNKNOWN = 4
 		}
 
 		// **** CONTROLS
 
 		// Control change
+		// u8 cctype, [layout/4] value, [layout%4] duration
+		// See bms.py... It may or may not be easier to read.
+
+		//        duration
+		//  val | 0    ?    u8   u16  
+		// -----+---- ---- ---- ----- 
+		//  u8  | 94   95   96   97   
+		//  s8  | 98   99   9a   9b   
+		//  s16 | 9c   9d   9e   9f   
 
 		u8 BmsPerfType, type value:
 		type = switch ev {
@@ -144,7 +164,7 @@ func thread(addr) {
 		// **** TEMPO
 
 		case 0xFD:
-			u16 tempo
+			u16 tempo	// bpm
 
 		case 0xFE:
 			u16 tickrate
@@ -152,10 +172,10 @@ func thread(addr) {
 
 		// **** LOOPING (arookas)
 
-		// Jump
+		// Call, Jump
 		case 0xC4, 0xC8:
-			u8 mode
-			u24 BmsSeekMode
+			u8 BmsSeekMode
+			u24 addr
 
 		// "WriteBack"
 		case 0xC6:
@@ -176,12 +196,10 @@ func thread(addr) {
 
 		case 0xA0: drop 2
 		case 0xA3: drop 2
-		case 0xA4: drop 2
 		case 0xA5: drop 2
 		case 0xA7: drop 2
 		case 0xA9: drop 4
 		case 0xAA: drop 4
-		case 0xAC: drop 3
 		case 0xAD: drop 3
 		case 0xB8: drop 2
 		case 0xC2: drop 1
@@ -200,8 +218,8 @@ func thread(addr) {
 		case 0xE0: drop 2
 		case 0xE2: drop 1
 		case 0xE3: drop 1
-		case 0xE6: drop 2
-		case 0xE7: drop 2
+		case 0xE6: drop 2	// CONFLICT - AROOKAS is WRONG!
+		case 0xE7: drop 2	// Track Init
 		case 0xEF: drop 3
 		case 0xF1: drop 1
 		case 0xF4: drop 1
