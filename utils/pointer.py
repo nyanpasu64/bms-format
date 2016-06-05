@@ -1,4 +1,7 @@
+from binascii import unhexlify
 from typing import ByteString
+
+# todo save as json/protobuf
 
 
 def wrap(val, bits):
@@ -20,7 +23,7 @@ class MagicError(ValueError):
 
 
 class Pointer:
-    def __init__(self, data, addr: int = 0, endian=False):
+    def __init__(self, data: bytes, addr: int, endian=False):
 
         if not isinstance(data, ByteString):
             raise TypeError('Pointer() requires bytes or bytearray (buffer API)')
@@ -55,7 +58,7 @@ class Pointer:
 
     # **** READ ****
 
-    def str(self, length):
+    def bytes(self, length):
         old_idx = self.addr
         self.addr += length
         idx = self.addr
@@ -85,9 +88,14 @@ class Pointer:
         """ Assert the existence of magic constants. """
         pos = self.addr
 
-        read = self.str(len(magic))
+        read = self.bytes(len(magic))
         if read != magic:
             raise MagicError('Invalid magic at {}: {} != {}'.format(pos, read, magic))
+
+        return read
+
+    def hexmagic(self, hexmagic):
+        return self.magic(unhexlify(hexmagic))
 
     def _get_unsignedf(self, bits, endian):
         def get_unsigned(endian=endian):
