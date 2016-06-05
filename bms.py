@@ -1,6 +1,7 @@
 import sys
 from enum import Enum, IntEnum
 from typing import Callable, Any
+from typing import Dict
 from typing import List
 
 from util import get_tree, LOGGER
@@ -23,67 +24,41 @@ class BmsPerfType(IntEnum):
     PITCH = 1
     PAN = 3
 
+
 class BmsEvent(dict):
     def __init__(self, cmd: str, **evdata):
         super().__init__(**evdata)
         self['type'] = cmd
 
 
-class BmsFile:
-    def __init__(self):
+class BmsTrack(dict):
 
-        # Bind methods.
-        self._stack = []
+    def __init__(self, data: bytes, **kwargs):
+        super().__init__(**kwargs)
+        self._data = data
 
-        self.tracks = {}
+        self['type'] = 'track'
+        self['children'] = {}   # type: Dict[int, BmsTrack]
+        self['track'] = []      # type: List[BmsEvent]
 
-        # TODO: BmsFile.output = parse()
-        # versus BmsTrack: BmsFile[] = result
-        # OrderedDict()
+    def insert(self, cmd: str, **evdata: dict) -> dict:
+        # Add "type=cmd".
+        self['track'].append(BmsEvent(cmd, **evdata))
+        return evdata
 
-    def load(self, data: bytes):
-        self.data = data
+    def parse(self, addr:int):
 
-        self.parse(addr=0, tracknum=-1, depth=0)
+        track = self['track']
 
-        return self.tracks
+        insert = self.insert
 
-    # def pushpop(self, addr: int) -> Pointer:
-    #     ptr = Pointer(self.data, addr)
-    #     self.push(ptr)
-    #     yield ptr
-    #
-    #     return self.pop()
-    #
-    # def push(self, frame: Pointer) -> Pointer:
-    #     self._stack.append(frame)
-    #     return frame
-    #
-    # def pop(self) -> Pointer:
-    #     return self._stack.pop()
+        # # Add out_dict to JSON parent.
+        # if tracknum in self.tracks:
+        #     raise BmsError('duplicate track numbers')
+        # self.tracks[tracknum] = out_dict
 
+        ptr = Pointer(self._data, addr)
 
-    def parse(self, *, addr:int, tracknum:int, depth:int) -> None:
-
-        out_dict = {'type': 'track'}
-        track = []  # type: List[BmsEvent]
-        out_dict['track'] = track
-
-        # Add out_dict to JSON parent.
-        if tracknum in self.tracks:
-            raise BmsError('duplicate track numbers')
-        self.tracks[tracknum] = out_dict
-
-        # etc.
-        def insert(cmd: str, **evdata:dict) -> dict:
-            # Add "type=cmd".
-            track.append(BmsEvent(cmd, **evdata))
-            return evdata
-
-        def append(event:BmsEvent) -> None:
-            track.append(event)
-
-        ptr = Pointer(self.data, addr)
         stop = False
 
         while 1:
@@ -92,17 +67,19 @@ class BmsFile:
 
             # **** FLOW COMMANDS
 
-            if 0: pass
+            old = None
+            if track:
+                old = track[-1]
+
+            if 0:
+                pass
 
             elif ev == 0xC1:
-                kwargs = insert('child',
-                      tracknum = ptr.u8(),
-                      addr = ptr.u24()
-                      )
-                self.parse(**kwargs, depth=depth+1)
+                self.child(ptr)
+
 
             elif ev == 0xFF:
-                insert('break')
+                insert('end_track')
                 stop = True
 
             # SPECIAL COMMANDS
@@ -113,8 +90,7 @@ class BmsFile:
                        )
 
             elif ev in [0xA4, 0xAC]:
-                # FIXME APPEND
-                append(self.instr_change(ptr, ev))
+                self.instr_change(ptr, ev)
 
             elif ev == 0xFE:
                 insert('tick_rate', value=ptr.u16())
@@ -134,8 +110,7 @@ class BmsFile:
             # **** CONTROL CHANGES
 
             elif 0x94 <= ev <= 0x9F:
-                # FIXME APPEND
-                append(self.control_change(ptr, ev))
+                self.control_change(ptr, ev)
 
 
 
@@ -163,11 +138,56 @@ class BmsFile:
             if track[-1] is None:
                 assert False
 
+            if track[-1] is old:
+                assert False
+
             if stop:
                 break
+        return self
 
-    @staticmethod
-    def instr_change(ptr, ev) -> BmsEvent:
+
+
+    # Each track has a dict of children.
+    # children + child + grandchildren
+    # So check twice for errors.
+
+    def child(self, ptr):
+        tracknum = ptr.u8()
+        addr = ptr.u24()
+
+        # Symlink
+        self.insert('child',
+                    tracknum=tracknum,
+                    addr=addr
+                    )
+
+        # Parse
+        child = BmsTrack(self._data).parse(addr)
+
+        children = self['children']     # type: Dict[int, BmsTrack]
+        grand = child['children']       # type: Dict[int, BmsTrack]
+
+        # Check for duplicates
+        # children + tracknum + grand
+
+        # 2+3 = recursion
+        if tracknum in grand:
+            LOGGER.warn('Recursive child ')
+
+        # 1+2 = collision
+        intersect = children.keys() & grand.keys()
+        if intersect:
+            LOGGER.warn('Duplicate tracks %s', str(intersect))
+
+        children[tracknum] = child
+        children.update(grand)
+        grand.clear()
+
+
+    def instr_change(self, ptr, ev):
+        # (ev), ev2, value
+        # ev=width, ev2=type
+
         if ev == 0xA4:
             get = ptr.u8
         elif ev == 0xAC:
@@ -179,21 +199,24 @@ class BmsFile:
         value = get()
 
         if ev2 == 0x20:
-            return BmsEvent('bank_select', value=value)
+            ev2 = 'bank'
         elif ev2 == 0x21:
-            return BmsEvent('patch_change', value=value)
+            ev2 = 'patch'
         else:
             LOGGER.warn('Unknown instr change %X %X %X', ev, ev2, value)
-            return BmsEvent('unknown_instr_%X' % ev2, value=value)
+            ev2 = hex(ev2)
 
-    @staticmethod
-    def control_change(ptr, ev) -> BmsEvent:
+        self.insert('instr_change', ev2=ev2, value=value)
+
+
+    def control_change(self, ptr, ev) -> BmsEvent:
         # u8 BmsPerfType, u? value, us? length
         layout = ev - 0x94
 
         # READ CCTYPE
+        cctype = ptr.u8()
         try:
-            cctype = BmsPerfType(ptr.u8())
+            cctype = BmsPerfType(cctype)
         except ValueError:
             LOGGER.warn('[CC %X] Unknown control change 0x%X', ev, cctype)
 
@@ -213,11 +236,47 @@ class BmsFile:
 
         LOGGER.debug('control change %X %X %X', cctype, value, length)
 
-        return BmsEvent('control_change',
-                        cctype=cctype,
-                        value=value,
-                        length=length
-                        )
+        self.insert('control_change',
+                    cctype=cctype,
+                    value=value,
+                    length=length
+                    )
+
+
+
+class BmsFile:
+    def __init__(self):
+
+        # Bind methods.
+        self._stack = []
+
+        self.tracks = {}    # TODO unused
+
+        # TODO: BmsFile.output = parse()
+        # versus BmsTrack: BmsFile[] = result
+        # OrderedDict()
+
+    def load(self, data: bytes):
+        self.data = data
+
+        track = BmsTrack(data).parse(0)
+
+        return track
+
+    # def pushpop(self, addr: int) -> Pointer:
+    #     ptr = Pointer(self.data, addr)
+    #     self.push(ptr)
+    #     yield ptr
+    #
+    #     return self.pop()
+    #
+    # def push(self, frame: Pointer) -> Pointer:
+    #     self._stack.append(frame)
+    #     return frame
+    #
+    # def pop(self) -> Pointer:
+    #     return self._stack.pop()
+
 
 
 def main():
