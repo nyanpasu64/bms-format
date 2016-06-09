@@ -33,6 +33,14 @@ class BmsEvent(dict):
 
 class BmsTrack(dict):
 
+    # TODO: BmsFile reference
+    # when you create a child track, insert into file
+    # Yes, track 0 IS used.
+
+    # TODO: byte-operation mapping?
+    # status[addr] = {unvisited, visited, interior}
+    # interior = bail out
+
     def __init__(self, data: bytes, addr:int, tracknum:int):
         super().__init__()
         self.data = data
