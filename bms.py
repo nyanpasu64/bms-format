@@ -6,7 +6,7 @@ from typing import Callable, Any
 from typing import Dict
 from typing import List
 
-from util import get_tree, LOG, b2h, AttrDict
+from util import LOG, b2h, AttrDict, without
 from utils.pointer import Pointer
 
 Function = Callable[..., Any]
@@ -153,7 +153,7 @@ class BmsTrack(dict):
 
             elif ev == 0xE6:    # TODO unknown
                 msg = 'unknown [arookas]WriteRemovePool'
-                LOG.debug(msg)
+                LOG.info(msg)
                 insert(msg, unknown=ptr.u16())
 
             # **** NOTES
@@ -322,13 +322,57 @@ class BmsTrack(dict):
             cctype = 'unknown %s' % b2h(cctype)
 
 
-        LOG.debug('control change - %s, %02X, %02X', cctype, value, duration)
+        LOG.info('control change - %s, %02X, %02X', cctype, value, duration)
 
         self.insert('control_change',
                     cctype=cctype,
                     value=value,
                     length=duration
                     )
+from ruamel import yaml
+from ruamel.yaml.representer import SafeRepresenter
+
+
+def represents(cls):
+    def _represents(func):
+        yaml.add_representer(cls, func)
+        return func
+    return _represents
+
+
+@represents(int)
+@represents(BmsPerfType)
+def int_presenter(dumper: SafeRepresenter, data):
+    return dumper.represent_int(data)
+
+@represents(BmsEvent)
+def event_pres(dumper: SafeRepresenter, data):
+
+    if 'addr' in data:
+        data = dict(data)
+        data['addr'] = hex(data['addr'])
+
+    tag = data['type']
+    # print(tag)
+    # print(without(data, 'type'))
+
+    rep = dumper.represent_mapping(
+        tag,
+        without(data, 'type')
+    )
+
+    # print(type(rep))
+    return rep
+
+@represents(BmsTrack)
+def track_pres(dumper: SafeRepresenter, data):
+    return dumper.represent_dict(data)
+
+def get_tree(tree: dict) -> str:
+    return yaml.dump(tree, indent=2)
+
+
+
 
 
 def main():
