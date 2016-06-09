@@ -1,10 +1,12 @@
+#!/usr/bin/env python
+
 import sys
 from enum import Enum, IntEnum
 from typing import Callable, Any
 from typing import Dict
 from typing import List
 
-from util import get_tree, LOG, b2h
+from util import get_tree, LOG, b2h, AttrDict
 from utils.pointer import Pointer
 
 Function = Callable[..., Any]
@@ -13,8 +15,6 @@ Function = Callable[..., Any]
 
 class BmsError(ValueError):
     pass
-
-
 
 
 # **** BEGIN CLASS
@@ -31,6 +31,38 @@ class BmsEvent(dict):
         self['type'] = cmd
 
 
+class BmsFile(AttrDict):
+    def __init__(self, data: bytes):
+        super().__init__()
+
+        self._data = data
+        self.tracks = {}  # type: Dict[int, BmsTrack]
+
+        # TODO: BmsFile.output = parse()
+        # versus BmsTrack: BmsFile[] = result
+        # OrderedDict()
+
+    def parse(self):
+
+        BmsTrack(file=self, addr=0, tracknum=-1).parse()
+
+        return self
+
+        # def pushpop(self, addr: int) -> Pointer:
+        #     ptr = Pointer(self.data, addr)
+        #     self.push(ptr)
+        #     yield ptr
+        #
+        #     return self.pop()
+        #
+        # def push(self, frame: Pointer) -> Pointer:
+        #     self._stack.append(frame)
+        #     return frame
+        #
+        # def pop(self) -> Pointer:
+        #     return self._stack.pop()
+
+
 class BmsTrack(dict):
 
     # TODO: BmsFile reference
@@ -41,17 +73,18 @@ class BmsTrack(dict):
     # status[addr] = {unvisited, visited, interior}
     # interior = bail out
 
-    def __init__(self, data: bytes, addr:int, tracknum:int):
+    def __init__(self, file: BmsFile, addr:int, tracknum:int):
         super().__init__()
-        self.data = data
-        self.ptr = Pointer(data, addr)
+        self.file = file
+        self.data = file._data
+        self.ptr = Pointer(self.data, addr)
 
         self['type'] = 'track'
         self['tracknum'] = tracknum
-        self['children'] = {tracknum: None}     # type: Dict[int, BmsTrack]
+        # self['children'] = {tracknum: None}   # type: Dict[int, BmsTrack]
         self['track'] = []                      # type: List[BmsEvent]
 
-        self.note_history = [None]*8
+        self.note_history = [None] * 8
 
 
     def insert(self, cmd: str, **evdata: dict) -> dict:
@@ -59,7 +92,7 @@ class BmsTrack(dict):
         self['track'].append(BmsEvent(cmd, **evdata))
         return evdata
 
-    def parse(self):
+    def parse(self) -> None:
         insert = self.insert
 
         track = self['track']
@@ -184,7 +217,7 @@ class BmsTrack(dict):
 
             if stop:
                 break
-        return self
+        return self     # FIXME
 
 
     def child(self, ptr):
@@ -296,42 +329,6 @@ class BmsTrack(dict):
                     value=value,
                     length=duration
                     )
-
-
-
-class BmsFile:
-    def __init__(self):
-
-        # Bind methods.
-        self._stack = []
-
-        self.tracks = {}    # TODO unused
-
-        # TODO: BmsFile.output = parse()
-        # versus BmsTrack: BmsFile[] = result
-        # OrderedDict()
-
-    def load(self, data: bytes):
-        self.data = data
-
-        track = BmsTrack(data, 0, tracknum=-1).parse()
-
-        return track
-
-    # def pushpop(self, addr: int) -> Pointer:
-    #     ptr = Pointer(self.data, addr)
-    #     self.push(ptr)
-    #     yield ptr
-    #
-    #     return self.pop()
-    #
-    # def push(self, frame: Pointer) -> Pointer:
-    #     self._stack.append(frame)
-    #     return frame
-    #
-    # def pop(self) -> Pointer:
-    #     return self._stack.pop()
-
 
 
 def main():
