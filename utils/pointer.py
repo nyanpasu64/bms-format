@@ -1,5 +1,7 @@
 from binascii import unhexlify
-from typing import ByteString
+from enum import Enum
+from typing import ByteString, List
+
 
 # todo save as json/protobuf
 
@@ -18,21 +20,42 @@ def bytes2int(in_bytes, endian=False):
     return int.from_bytes(in_bytes, 'little' if endian else 'big')
 
 
+class OverlapError(ValueError):
+    pass
+
+
 class MagicError(ValueError):
     pass
 
 
+class Visit(Enum):
+    NONE = 0
+    BEGIN = 1
+    MIDDLE = 2
+
+
 class Pointer:
-    def __init__(self, data: bytes, addr: int, endian=False):
+    def __init__(self,
+                 data: bytes,
+                 addr: int,
+                 visited: List[Visit],
+                 endian=False):
 
         if not isinstance(data, ByteString):
             raise TypeError('Pointer() requires bytes or bytearray (buffer API)')
 
+        if len(data) != len(visited):
+            raise ValueError(
+                'Data %s != Visited log %s' % (len(data), len(visited))
+            )
+
         self.data = data
+        self.visited = visited
 
         self.addr = None
         self.seek(addr)
 
+        # self.bytes() raises OverlapError
         self.u8 = self._get_unsignedf(8, endian)
         self.u16 = self._get_unsignedf(16, endian)
         self.u24 = self._get_unsignedf(24, endian)
@@ -58,7 +81,13 @@ class Pointer:
 
     # **** READ ****
 
-    def bytes(self, length):
+    def hist(self, addr=None):
+        if addr is None:
+            addr = self.addr
+
+        return self.visited[addr]
+
+    def bytes(self, length, mode:Visit = Visit.MIDDLE):
         old_idx = self.addr
         self.addr += length
         idx = self.addr
@@ -66,6 +95,11 @@ class Pointer:
         if idx > len(self.data):
             raise StopIteration
 
+        for hist in self.visited[old_idx:idx]:
+            if hist != Visit.NONE:
+                raise OverlapError
+
+        self.visited[old_idx:idx] = [mode] * length
         return self.data[old_idx:idx]
 
     def vlq(self):
@@ -97,16 +131,14 @@ class Pointer:
     def hexmagic(self, hexmagic):
         return self.magic(unhexlify(hexmagic))
 
+    # self.bytes() raises OverlapError
     def _get_unsignedf(self, bits, endian):
-        def get_unsigned(endian=endian):
-            bytes = bits // 8
-            old_idx = self.addr
-            self.addr += bytes
+        def get_unsigned(mode:Visit = Visit.MIDDLE):
+                # endian=endian
 
-            if self.addr > len(self.data):
-                raise StopIteration
-
-            return bytes2int(self.data[old_idx: old_idx + bytes], endian)
+            nbytes = bits // 8
+            data = self.bytes(nbytes, mode)
+            return bytes2int(data, endian)
 
         return get_unsigned
 

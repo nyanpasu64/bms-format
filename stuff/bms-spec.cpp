@@ -8,28 +8,43 @@ func thread(addr) {
 	Loop: for {
 		switch ev {
 
-		// **** CHILD THREAD
-		case 0xC1:
+		// **** Flow Control
+
+		case 0xC1:	// Child thread
 			u8  track_id
 			u24 addr
 
-		// **** RETURN
-		case 0xFF:
-			break Loop
+		case 0xFF:	// Stop thread
+			return
 
+		case 0xC4:	// Call
+		case 0xC8:	// Jump
+			u8 BmsSeekMode
+			u24 addr
+
+		case 0xC6:	// Pop
+			u8 BmsSeekMode
+
+
+		// Unused
 /*
-		// **** CALL STACK
-		// call function
-		case 0xC3:
+		case 0xC3:	// call function
 			u24 addr
 			call addr
 
-		// return function
-		case 0xC5:
+		case 0xC5:	// return function
 			// CONFLICT!!!!
 			return stack	// V3
 			drop 3      	// V2
 */
+		// Special commands
+
+		case 0xE7:	// Track Init
+			u16 = 0
+
+		case
+
+
 
 		// **** NOTES
 
@@ -99,11 +114,11 @@ func thread(addr) {
 		// See bms.py... It may or may not be easier to read.
 
 		//        duration
-		//  val | 0    ?    u8   u16  
-		// -----+---- ---- ---- ----- 
-		//  u8  | 94   95   96   97   
-		//  s8  | 98   99   9a   9b   
-		//  s16 | 9c   9d   9e   9f   
+		//  val | 0    ?    u8   u16
+		// -----+---- ---- ---- -----
+		//  u8  | 94   95   96   97
+		//  s8  | 98   99   9a   9b
+		//  s16 | 9c   9d   9e   9f
 
 		u8 BmsPerfType, type value:
 		type = switch ev {
@@ -170,18 +185,6 @@ func thread(addr) {
 			u16 tickrate
 
 
-		// **** LOOPING (arookas)
-
-		// Call, Jump
-		case 0xC4, 0xC8:
-			u8 BmsSeekMode
-			u24 addr
-
-		// "WriteBack"
-		case 0xC6:
-			u8 BmsSeekMode
-
-
 		// UNKNOWN COMMANDS
 
 		case 0xB1:
@@ -219,7 +222,6 @@ func thread(addr) {
 		case 0xE2: drop 1
 		case 0xE3: drop 1
 		case 0xE6: drop 2	// CONFLICT - AROOKAS is WRONG!
-		case 0xE7: drop 2	// Track Init
 		case 0xEF: drop 3
 		case 0xF1: drop 1
 		case 0xF4: drop 1

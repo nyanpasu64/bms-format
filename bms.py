@@ -2,12 +2,11 @@
 
 import sys
 from enum import Enum, IntEnum
-from typing import Callable, Any
-from typing import Dict
-from typing import List
+from typing import Callable, Any, Union, Dict, List
 
 from util import LOG, b2h, AttrDict, without
-from utils.pointer import Pointer
+from utils.pointer import Pointer, OverlapError
+from utils.pointer import Visit
 
 Function = Callable[..., Any]
 
@@ -19,119 +18,134 @@ class BmsError(ValueError):
 
 # **** BEGIN CLASS
 
-class BmsPerfType(IntEnum):
+class BmsPerfType(Enum):
     VOLUME = 0
     PITCH = 1
     PAN = 3
 
 
-class BmsEvent(dict):
+class BmsSeekMode(Enum):
+    Always = 0
+    Zero = 1
+    NonZero = 2
+    One = 3
+    GreaterThan = 4
+    LessThan = 5
+
+
+class BmsEvent(AttrDict):
     def __init__(self, cmd: str, **evdata):
         super().__init__(**evdata)
         self['type'] = cmd
 
 
-class BmsFile(AttrDict):
+class BmsFile(dict):
     def __init__(self, data: bytes):
         super().__init__()
 
-        self._data = data
-        self.tracks = {}  # type: Dict[int, BmsTrack]
+        self.data = data
 
-        # TODO: BmsFile.output = parse()
-        # versus BmsTrack: BmsFile[] = result
-        # OrderedDict()
+        # "visited" = pointer tracking
+        # "at" = events
+        # TODO Should they be combined?
+        # should Pointer know about the existence of BMS events? No?
+
+        self.visited = [Visit.NONE] * len(data)     # type: List[Visit]
+        self['at'] = {}                             # type: Dict[int, BmsEvent]
+        self['tracks'] = {}                       # type: Dict[int, int]
 
     def parse(self):
-
         BmsTrack(file=self, addr=0, tracknum=-1).parse()
 
         return self
 
-        # def pushpop(self, addr: int) -> Pointer:
-        #     ptr = Pointer(self.data, addr)
-        #     self.push(ptr)
-        #     yield ptr
-        #
-        #     return self.pop()
-        #
-        # def push(self, frame: Pointer) -> Pointer:
-        #     self._stack.append(frame)
-        #     return frame
-        #
-        # def pop(self) -> Pointer:
-        #     return self._stack.pop()
-
 
 class BmsTrack(dict):
 
-    # TODO: BmsFile reference
+    # BmsFile reference
     # when you create a child track, insert into file
     # Yes, track 0 IS used.
 
-    # TODO: byte-operation mapping?
+    # byte-operation mapping?
     # status[addr] = {unvisited, visited, interior}
     # interior = bail out
 
-    def __init__(self, file: BmsFile, addr:int, tracknum:int):
+    def __init__(self, file: BmsFile, addr:int,
+                 tracknum: Union[int, None]):
+
         super().__init__()
-        self.file = file
-        self.data = file._data
-        self.ptr = Pointer(self.data, addr)
+        self.file = file    # type: BmsFile
+        self.data = file.data
+        self.ptr = Pointer(self.data, addr, file.visited)
 
         self['type'] = 'track'
-        self['tracknum'] = tracknum
-        # self['children'] = {tracknum: None}   # type: Dict[int, BmsTrack]
-        self['track'] = []                      # type: List[BmsEvent]
+        # self['tracknum'] = tracknum
+        self.tracknum = tracknum
+        self['addr'] = addr
+
+        if tracknum is not None:
+            if tracknum in file['tracks']:
+                LOG.warning('Duplicate track %d', tracknum)
+
+            file['tracks'][tracknum] = self
 
         self.note_history = [None] * 8
+        self.prev_addr = None
 
+    def insert(self, cmd: str, next=True, **evdata: dict) -> None:
+        addr = self.prev_addr
+        event_at = self.file['at']
 
-    def insert(self, cmd: str, **evdata: dict) -> dict:
-        # Add "type=cmd".
-        self['track'].append(BmsEvent(cmd, **evdata))
-        return evdata
+        assert addr not in event_at
+
+        event = BmsEvent(cmd, **evdata)
+        if next:
+            event.next = self.ptr.addr
+
+        event_at[addr] = event
 
     def parse(self) -> None:
         insert = self.insert
 
-        track = self['track']
         ptr = self.ptr
-
         stop = False
 
-        while 1:
-            ev = ptr.u8()
-            LOG.debug('%06X - %02X', ptr.addr-1, ev)
+        self.prev_addr = None     # type: int
 
-            old = None
-            if track:
-                old = track[-1]
+        while 1:
+            prev_addr = ptr.addr
+            self.prev_addr = prev_addr
+            ev = ptr.u8(mode=Visit.BEGIN)
 
             # **** FLOW COMMANDS
 
             if 0:
                 pass
 
-            elif ev == 0xC1:
+            elif ev == 0xC1:            # new track
                 self.child(ptr)
 
-            elif ev == 0xFF:
-                insert('end_track')
+            elif ev in [0xC4, 0xC8]:    # call address
+                self.call_jump(ev, ptr)
+
+
+            elif ev == 0xFF:            # end track
+                if self.tracknum is None:
+                    raise BmsError('end_track from function')
+
+                insert('end_track', next=False)
                 stop = True
 
-            # todo finish jump/call
-            elif ev == 0xC4:
-                insert('call',
-                       mode=ptr.u8(),
-                       addr=ptr.u24()
-                       )
+            elif ev == 0xC6:            # pop address
+                if self.tracknum is not None:
+                    raise BmsError('pop from root thread')
 
-            elif ev == 0xC8:
-                insert('jump',
-                       mode=ptr.u8(),
-                       addr=ptr.u24()
-                       )
+                insert('pop', next=False)
+                stop = True
+
+
+
+
 
             # **** SPECIAL COMMANDS
 
@@ -140,7 +154,7 @@ class BmsTrack(dict):
                 if unknown != 0:
                     LOG.warn('Track init != 0x0000')
 
-                insert('init', unknown=unknown)
+                insert('init_track', unknown=unknown)
 
             elif ev in [0xA4, 0xAC]:
                 self.instr_change(ptr, ev)
@@ -159,7 +173,6 @@ class BmsTrack(dict):
             # **** NOTES
 
             elif ev < 0x80:
-                addr = ptr.addr
                 poly_id = ptr.u8()
                 note = ev
                 velocity = ptr.u8()
@@ -171,7 +184,7 @@ class BmsTrack(dict):
                        )
 
                 if poly_id >= 8:
-                    LOG.error('Invalid poly_id at %06X = %02X (%02X v=%02X)', addr, poly_id, note, velocity)
+                    LOG.error('Invalid poly_id at %06X = %02X (%02X v=%02X)', prev_addr, poly_id, note, velocity)
                     # poly_id %= 8
                 else:
                     self.note_history[poly_id] = note
@@ -206,19 +219,16 @@ class BmsTrack(dict):
             # **** FALLBACK
 
             else:
-                insert('unknown event %s' % b2h(ev))
+                text = 'unknown event %s' % b2h(ev)
+                LOG.warn(text)
+                insert(text)
                 stop = True
 
-            if track[-1] is None:
-                assert False
-
-            if track[-1] is old:
-                assert False
+            assert prev_addr in self.file['at']
+            assert self.file['at'][prev_addr] is not None
 
             if stop:
                 break
-        return self     # FIXME
-
 
     def child(self, ptr):
         tracknum = ptr.u8()
@@ -230,35 +240,35 @@ class BmsTrack(dict):
                     addr=addr
                     )
 
-        # Parse
-        child = BmsTrack(self.data, addr, tracknum).parse()
+        BmsTrack(self.file, addr, tracknum).parse()
 
-        children = self['children']     # type: Dict[int, BmsTrack]
-        grand = child['children']       # type: Dict[int, BmsTrack]
+    def call_jump(self, ev, ptr):
+        jumps = {0xC4: 'call', 0xC8: 'jump'}
+        evtype = jumps[ev]
 
-        # Don't add child to children. That will create false-positive recursion.
+        mode = BmsSeekMode(ptr.u8())
+        addr = ptr.u24()
 
-        # Check for duplicates
-        # Each track has a subtree dict.
-        # TODO: Do we need a separate "subtree" function? subtree ids only?
-        # .children{.tracknum...} + child.children{.tracknum...}
+        self.insert(evtype,
+                    mode=mode,
+                    addr=addr)
 
-        # 1+2 = collision
-        intersect = children.keys() & grand.keys()
-        if intersect:
-            LOG.warning('Duplicate tracks %s', str(intersect))
-            if self['tracknum'] in grand:
-                LOG.warning('Parent track collision %s', self['tracknum'])
-            if tracknum in children:
-                LOG.warning('Child track collision %s', tracknum)
+        # Call address?
 
-        # FIXME Uh, we're kinda overwriting grandchildren with children.
-        # But we don't overwrite children with self.
-        children.update(grand)
-        children[tracknum] = child
-        # grand.clear()
-        del child['children']
+        hist = ptr.hist(addr)
 
+        if hist == Visit.MIDDLE:
+            raise OverlapError('%s %s - middle of command' % (jumps[ev], hex(addr)))
+
+        if hist == Visit.NONE:
+
+            # Call address.
+            if evtype == 'call':
+                BmsTrack(self.file, addr, None).parse()
+            elif evtype == 'jump':
+                self.ptr.addr = addr
+            else:
+                assert False
 
     def instr_change(self, ptr, ev):
         # (ev), ev2, value
@@ -318,7 +328,7 @@ class BmsTrack(dict):
         try:
             cctype = BmsPerfType(cctype)
         except ValueError:
-            LOG.warning('[CC %s] Unknown control change %s = %s', b2h(ev), b2h(cctype), value)
+            LOG.info('[CC %s] Unknown control change %s = %s', b2h(ev), b2h(cctype), value)
             cctype = 'unknown %s' % b2h(cctype)
 
 
@@ -329,6 +339,8 @@ class BmsTrack(dict):
                     value=value,
                     length=duration
                     )
+
+
 from ruamel import yaml
 from ruamel.yaml.representer import SafeRepresenter
 
@@ -348,9 +360,10 @@ def int_presenter(dumper: SafeRepresenter, data):
 @represents(BmsEvent)
 def event_pres(dumper: SafeRepresenter, data):
 
-    if 'addr' in data:
-        data = dict(data)
-        data['addr'] = hex(data['addr'])
+    data = dict(data)
+    for k in ['addr', 'next']:
+        if k in data:
+            data[k] = hex(data[k])
 
     tag = data['type']
     # print(tag)
@@ -364,9 +377,33 @@ def event_pres(dumper: SafeRepresenter, data):
     # print(type(rep))
     return rep
 
+
 @represents(BmsTrack)
 def track_pres(dumper: SafeRepresenter, data):
+    data = dict(data)
+
+    k = 'addr'
+    if k in data:
+        data[k] = hex(data[k])
+
     return dumper.represent_dict(data)
+
+@represents(BmsFile)
+def track_pres(dumper: SafeRepresenter, data):
+    new = {}
+    for k,v in data.items():
+        if k == 'at':
+            new[k] = {'$%04X'%addr: event for addr,event in v.items()}
+        else:
+            new[k] = v
+
+    return dumper.represent_dict(new)
+
+
+@represents(BmsPerfType)
+@represents(BmsSeekMode)
+def track_pres(dumper: SafeRepresenter, data):
+    return dumper.represent_int(str(data))
 
 def get_tree(tree: dict) -> str:
     return yaml.dump(tree, indent=2)
@@ -380,7 +417,7 @@ def main():
 
     with open(argv[1], 'rb') as f:
         data = f.read()
-        tree = BmsFile().load(data)
+        tree = BmsFile(data).parse()
 
         print(get_tree(tree))
 
