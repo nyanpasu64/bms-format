@@ -1,6 +1,7 @@
 import logging
 
-LEVEL = logging.DEBUG
+LEVEL = logging.WARNING
+
 
 # https://stackoverflow.com/a/7622029/2683842
 def get_logger(name='root'):
@@ -19,7 +20,7 @@ LOG = get_logger()
 
 
 class AttrDict(dict):
-    def __init__(self, seq=None, **kwargs):
+    def __init__(self, seq={}, **kwargs):
         """
         dict() -> new empty dictionary
         dict(mapping) -> new dictionary initialized from a mapping object's
@@ -35,8 +36,10 @@ class AttrDict(dict):
         super().__init__(seq, **kwargs)
         self.__dict__ = self
 
+
 def b2h(byte):
     return '0x%02X' % byte
+
 
 def without(dic, key):
     return {k:v for k,v in dic.items() if k != key}
