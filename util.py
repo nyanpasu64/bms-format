@@ -41,5 +41,18 @@ def b2h(byte):
     return '0x%02X' % byte
 
 
-def without(dic, key):
-    return {k:v for k,v in dic.items() if k != key}
+def without(d: dict, key):
+    return {k:v for k,v in d.items() if k != key}
+
+
+def dict_invert(d: dict):
+    return {v:k for k,v in d.items()}
+
+
+def dictify(root, **kwargs):
+    return kwargs
+
+
+def dict_from(root, **kwargs):
+    """ a, b=x, c=y -> {a.b:x, a.c:y} """
+    return {getattr(root, k): v for k, v in kwargs.items()}

@@ -4,7 +4,8 @@ import sys
 from enum import Enum, IntEnum
 from typing import Callable, Any, Union, Dict, List
 
-from util import LOG, b2h, AttrDict, without
+from util import LOG, b2h, AttrDict, without, dict_invert, dict_from
+from utils.classes import CC
 from utils.pointer import Pointer, OverlapError
 from utils.pointer import Visit
 
@@ -18,10 +19,14 @@ class BmsError(ValueError):
 
 # **** BEGIN CLASS
 
-class BmsPerfType(Enum):
-    VOLUME = 0
-    PITCH = 1
-    PAN = 3
+CC2BMS = dict_from(
+    CC,
+    VOLUME=0,
+    PITCH=1,
+    PAN=3
+)
+
+BMS2CC = dict_invert(CC2BMS)
 
 
 class BmsSeekMode(Enum):
@@ -52,7 +57,7 @@ class BmsFile(dict):
 
         self.visited = [Visit.NONE] * len(data)     # type: List[Visit]
         self['at'] = {}                             # type: Dict[int, BmsEvent]
-        self['tracks'] = {}                       # type: Dict[int, int]
+        self['tracks'] = {}                         # type: Dict[int, int]
 
     def parse(self):
         BmsTrack(file=self, addr=0, tracknum=-1).parse()
@@ -326,8 +331,8 @@ class BmsTrack(dict):
 
         # FIX CCTYPE
         try:
-            cctype = BmsPerfType(cctype)
-        except ValueError:
+            cctype = BMS2CC[cctype]
+        except KeyError:
             LOG.info('[CC %s] Unknown control change %s = %s', b2h(ev), b2h(cctype), value)
             cctype = 'unknown %s' % b2h(cctype)
 
@@ -341,6 +346,12 @@ class BmsTrack(dict):
                     )
 
 
+    # **** ITERATOR ****
+
+    # def __iter__(self):
+
+
+
 from ruamel import yaml
 from ruamel.yaml.representer import SafeRepresenter
 
@@ -350,12 +361,6 @@ def represents(cls):
         yaml.add_representer(cls, func)
         return func
     return _represents
-
-
-@represents(int)
-@represents(BmsPerfType)
-def int_presenter(dumper: SafeRepresenter, data):
-    return dumper.represent_int(data)
 
 @represents(BmsEvent)
 def event_pres(dumper: SafeRepresenter, data):
@@ -400,16 +405,20 @@ def track_pres(dumper: SafeRepresenter, data):
     return dumper.represent_dict(new)
 
 
-@represents(BmsPerfType)
+@represents(CC)
 @represents(BmsSeekMode)
 def track_pres(dumper: SafeRepresenter, data):
-    return dumper.represent_int(str(data))
+    return dumper.represent_str(str(data))
+
+
+yaml.Dumper.ignore_aliases = lambda self, data: True
 
 def get_tree(tree: dict) -> str:
     return yaml.dump(tree, indent=2)
 
 
 
+# from utils.fluid import SeqSynth
 
 
 def main():
