@@ -4,7 +4,7 @@ from util import dict_from
 from utils.classes import CC
 
 if False:   # mypy type checking
-    from bms import BmsFile
+    from formats.bms import BmsFile
 
 CC2MIDI = dict_from(
     CC,
@@ -29,7 +29,8 @@ class SeqSynth:
     # def bank_select(chan, bank):
 
     def __init__(self, seq: BmsFile, **kwargs):
-        kw = {'samplerate': 48000}
+        kw = {
+            .samplerate': 48000}
         kw.update(kwargs)
 
         self.seq = seq
