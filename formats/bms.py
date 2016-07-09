@@ -1,7 +1,10 @@
+import numpy as np
+from numpy import array
+
 from enum import Enum
 from typing import Callable, Any, Union, Dict, List
 
-from util import LOG, b2h, dict_invert, dict_from
+from util import LOG, b2h, dict_invert, dict_from, uncamel
 from utils.classes import CC, SeqError, AttrDict
 from utils.pointer import Pointer, OverlapError
 from utils.pointer import Visit
@@ -17,9 +20,9 @@ CC2BMS = dict_from(
     VOLUME=0,
     PITCH=1,
     PAN=3
-)
+)   # type: Dict[CC, int]
 
-BMS2CC = dict_invert(CC2BMS)
+BMS2CC = dict_invert(CC2BMS)    # type: Dict[int, CC]
 
 
 # BmsType = Enum('')
@@ -35,6 +38,144 @@ class BmsEvent(AttrDict):
 
         self.type = cmd
 
+
+# **** EVENT CLASSES
+
+class BmsType(BmsEvent):
+    """
+    Typed variant of BmsEvent.
+    Automatically initializes "type" attribute based on subclass name.
+    It's like structs and brace initialization in C, only worse.
+    For Teh Autocompletez.
+    """
+    def __init__(self, **evdata):
+        name = uncamel(type(self).__name__)
+        super().__init__(name, **evdata)
+
+
+# TODO: Maybe we should use class decorators to define types and parsers together!
+# Hooray for obfuscating the logical flow of the program!
+
+# Right now, my body methods already look like class __init__.
+# We should use a classmethod for track-pointer init. Otherwise, we can no longer
+# create events directly.
+
+# VGMTrans N-SPC defines enum, builds map[ev, type], and uses a long switch.
+
+
+'''
+Dragon Roost:
+
+CC.VOLUME
+    value s16
+- is u8, u16, s16 relative to full range, or some fixed value?
+- is u8 255 louder than s16 255?
+
+CC.PITCH
+    value s16
+- What is the pitch range? What units? Pitch range adjust?
+
+CC.PAN
+    value s8
+- I assume BMS = +-(MIDI - 64)
+
+TODO: Recompile to BMS.
+'''
+
+# **** FLOW COMMANDS
+
+class Child(BmsType):       # new track
+    if 0:
+        tracknum = 0x00
+        addr = 0x000000
+
+
+class Call(BmsType):        # call address
+    if 0:
+        mode = BmsSeekMode(0x00)
+        addr = 0x000000
+
+
+class Jump(BmsType):
+    if 0:
+        mode = BmsSeekMode(0x00)
+        addr = 0x000000
+
+
+class EndTrack(BmsType):    # end track
+    pass
+
+
+class Pop(BmsType):         # pop address
+    pass
+
+
+# **** SPECIAL COMMANDS
+
+class InitTrack(BmsType):
+    if 0:
+        unknown = 0x0000
+
+
+class InstrChange(BmsType):
+    if 0:
+        ev2 = 'bank|patch'
+        value = 0x0001
+
+
+class TickRate(BmsType):
+    if 0:
+        value = 0x0010
+
+
+class Tempo(BmsType):
+    if 0:
+        value = 0x0010
+
+
+class WriteRemovePool(BmsType):
+    if 0:
+        unknown = 0x0000
+
+
+# **** NOTES
+
+class NoteOn(BmsType):
+    if 0:
+        poly_id = 1-7
+        note = 0x00
+        velocity = 0x00
+
+
+class NoteOff(BmsType):
+    if 0:
+        poly_id = 1-7
+        note = 0x00
+
+
+# **** CONTROL CHANGES
+
+class ControlChange(BmsType):
+    if 0:
+        cctype = CC
+        value = 1
+        length = 1
+
+
+# **** DELAYS
+
+class Delay(BmsType):
+    if 0:
+        dtime = 0x000000
+
+
+# **** FALLBACK
+
+# class UnknownEvent(BmsType):
+#     if 0:
+#         code = 0xFE
+
+# **** BMS :(
 
 class BmsFile(AttrDict):
     def __init__(self, data: bytes):
@@ -59,20 +200,6 @@ class BmsFile(AttrDict):
         return self
 
 
-# class BmsSegment(AttrDict):
-#     def __init__(self, addr: int):
-#         super().__init__()
-#         self.addr = addr
-#         self.arr = []   # type: List[BmsEvent]
-#
-#     def add(self, event: BmsEvent):
-#         self.arr.append(event)
-#
-#     def iter(self):
-#         return iter(self.arr)
-
-
-
 class BmsSeekMode(Enum):
     Always = 0
     Zero = 1
@@ -82,24 +209,25 @@ class BmsSeekMode(Enum):
     LessThan = 5
 
 
-class BmsTypes:
-    end_track = 'end_track'
-    pop = 'pop'
-    init_track = 'init_track'
-    tick_rate = 'tick_rate'
-    tempo = 'tempo'
-    note_on = 'note_on'
-    note_off = 'note_off'
-    delay = 'delay'
-    child = 'child'
-    call = 'call'
-    jump = 'jump'
-    instr = 'instr_change'
-    control_change = 'control_change'
+# class BmsNames:
+#     end_track = 'end_track'
+#     pop = 'pop'
+#     init_track = 'init_track'
+#     tick_rate = 'tick_rate'
+#     tempo = 'tempo'
+#     note_on = 'note_on'
+#     note_off = 'note_off'
+#     delay = 'delay'
+#     child = 'child'
+#     call = 'call'
+#     jump = 'jump'
+#     instr = 'instr_change'
+#     control_change = 'control_change'
 
 
 class OldNote:
-    """ This represents a stopped note in the BMS note history."""
+    """ This represents a stopped note in the BMS note history.
+    All stopped notes are equal. """
     def __init__(self, val: int):
         self.val = val
 
@@ -113,7 +241,7 @@ class OldNote:
 
     def __eq__(self, other):
         if isinstance(other, OldNote):
-            return self.val == other.val
+            return True
 
         if other is None:
             return True
@@ -123,8 +251,11 @@ class OldNote:
     def __ne__(self, other):
         return not self == other
 
+    def __bool__(self):
+        return False
 
-HISTORY_MODE = 'LAZY'
+
+HISTORY_MODE = ''
 class BmsTrack(AttrDict):
     # BmsPointer
 
@@ -134,7 +265,7 @@ class BmsTrack(AttrDict):
 
     def __init__(self, file: BmsFile, addr:int,
                  tracknum: Union[int, None],
-                 note_history: Union[List[int], None]):
+                 note_history: 'Union[array[int], None]'):
 
         super().__init__()
 
@@ -147,7 +278,7 @@ class BmsTrack(AttrDict):
         # Insert track into file.
         if tracknum is not None:
             if tracknum in file.tracks:
-                LOG.warning('Duplicate track %d', tracknum)
+                LOG.error('Duplicate track %d', tracknum)
 
             file.tracks[tracknum] = self
 
@@ -168,28 +299,69 @@ class BmsTrack(AttrDict):
         else:
             self.note_history = note_history[:]
 
+        self.note_history = array(self.note_history)
 
-        # In BMS, Note history is preserved through function calls.
-            # 24354 turns 1 on. Pop.
-            # 24361 turns 2 on. 24364 turns 1 off.
+        # Does this track modify note_history?
+        # True whenever notes are started/stopped.
+        self.touched = array([False] * 8)
 
-        # As a result, we pass self.hist to tracks.
-        # (Return), self.hist[:] = track.hist
-        # All passes are done by value. (subject to change)
+        '''
+        In BMS, note history is preserved through function calls.
+            24354 turns 1 on. Pop.
+            24361 turns 2 on. 24364 turns 1 off.
 
-        # You may call a function with one set of playing notes,
-        # then end with another set.
+        As a result, we pass self.hist to tracks.
+        (Return), self.hist[:] = track.hist
+        All passes are done by value. (subject to change)
 
-        # Partial solution: At each address, check preconditions (note_history) and apply postconditions.
-            # If repeat_note command, then None vs. OldNote may be a problem.
+        - Call a function with one set of playing notes,
+        - End with another set.
 
-        assert HISTORY_MODE == 'LAZY'
-        self.pre_history = self.note_history[:]
+        Partial solution: At each address, check preconditions (note_history) and apply postconditions.
+            - If repeat_note command, then None vs. OldNote may be a problem.
+
+        - To prevent pre_history from being modified, we must np.copy(parent note_history).
+
+        - No function (in Dragon Roost theme) uses same note-off on multiple pitches.
+        - One function (volume fadeout) was called with different running notes, but did not touch them.
+
+        We can build a system to accommodate notes that overlap functions, and functions that don't touch notes.
+        The system will reject functions that uses the same note-off on multiple pitches.
+
+        # SIMULATION (bad)
+
+        Every time a note_off occurs, make sure it's the same pitch.
+
+        class RepeatTrack(BmsTrack):
+            def i(): pass
+            def note_off():
+                bms_assert(at[].note == current note)
 
 
-        # Full solution: For calls (not jumps), repeat the entire call.
-            # Right now, Pointer raises OverlapError when we reread the same address.
-            # That was implemented under the assumption that everything is read exactly once.
+        # ASSERTION
+
+        Record which poly_ids are "touched" (on or off).
+        We will encounter issues if any touched notes differ from the original call.
+        This is equivalent but MUCH faster than simulation.
+
+        different = (np.array(track.pre_history) != self.note_history)
+        if any(different & track.touched):
+            LOG.error(...)
+
+
+        # FULL SOLUTION?
+        For calls (not jumps), repeat the entire call. When differently pitched note_offs occur,
+        you can't record them under the same at[]. So this won't work.
+
+        # GIVE UP
+        Store note-off events natively.
+            Kicking the can down the road. This won't help translating to other file formats.
+
+        The only full solution is flattening the file.
+        '''
+
+        # HISTORY_MODE == 'LAZY'
+        self.pre_history = np.copy(self.note_history)
 
 
     def bms_iter(self):
@@ -206,19 +378,23 @@ class BmsTrack(AttrDict):
 
 
 
-    def insert(self, cmd: str, next=True, **evdata: dict) -> None:
+    def insert(self, evtype: Union[type, str], next=True, **evdata: dict) -> None:
         addr = self._prev_addr
         event_at = self._file.at
 
         assert addr not in event_at
 
-        event = BmsEvent(cmd, **evdata)
+        if isinstance(evtype, type):
+            event = evtype(**evdata)
+        else:
+            assert False
+            # event = BmsEvent(evtype, **evdata)
         if next:
             event.next = self._ptr.addr
 
         event_at[addr] = event
 
-    def parse(self):
+    def parse(self) -> 'BmsTrack':
         insert = self.insert
 
         ptr = self._ptr
@@ -247,81 +423,53 @@ class BmsTrack(AttrDict):
                 if self.tracknum is None:
                     raise SeqError('end_track from function')
 
-                insert('end_track', next=False)
+                insert(EndTrack, next=False)
                 stop = True
 
             elif ev == 0xC6:            # pop address
                 if self.tracknum is not None:
                     raise SeqError('pop from root thread')
 
-                insert('pop', next=False)
+                insert(Pop, next=False)
                 stop = True
-
-
-
 
 
             # **** SPECIAL COMMANDS
 
-            elif ev == 0xE7:
+            elif ev == 0xE7:            # init track
                 unknown = ptr.u16()
+
+                # ASSERT
                 if unknown != 0:
-                    LOG.warn('Track init != 0x0000')
+                    LOG.warning('Track init %04X != 0x0000', unknown)
 
-                insert('init_track', unknown=unknown)
+                insert(InitTrack, unknown=unknown)
 
-            elif ev in [0xA4, 0xAC]:
+            elif ev in [0xA4, 0xAC]:    # instr change
                 self.instr_change(ptr, ev)
 
-            elif ev == 0xFE:
-                insert('tick_rate', value=ptr.u16())
+            elif ev == 0xFE:            # tick rate
+                insert(TickRate, value=ptr.u16())
 
-            elif ev == 0xFD:
-                insert('tempo', value=ptr.u16())
+            elif ev == 0xFD:            # tempo
+                insert(Tempo, value=ptr.u16())
 
-            elif ev == 0xE6:    # TODO unknown
-                msg = 'unknown [arookas]WriteRemovePool'
-                LOG.info(msg)
-                insert(msg, unknown=ptr.u16())
+            elif ev == 0xE6:            # TODO unknown
+                unknown = ptr.u16()
+
+                # ASSERT
+                if unknown != 0:
+                    LOG.warning('WriteRemovePool %04X != 0x0000', unknown)
+
+                insert(WriteRemovePool, unknown=unknown)
 
             # **** NOTES
 
-            elif ev < 0x80:
-                poly_id = ptr.u8()
-                note = ev
-                velocity = ptr.u8()
-
-                insert('note_on',
-                       poly_id=poly_id,
-                       note=note,
-                       velocity=velocity
-                       )
-
-                if poly_id not in range(1,8):
-                    LOG.error('Invalid poly_id at %06X = %02X (%02X v=%02X) %s',
-                              prev_addr, poly_id, note, velocity, self.note_history)
-                    # poly_id %= 8
-                else:
-                    old = self.note_history[poly_id]
-                    if isinstance(old, int):
-                        LOG.error('Double note_on at %06X = %02X (%02X v=%02X) %s',
-                                  prev_addr, poly_id, note, velocity, self.note_history)
-                    self.note_history[poly_id] = note
+            elif ev < 0x80:             # note on
+                self.note_on(ptr, ev)
 
             elif ev in range(0x81, 0x88):
-                poly_id = ev % 8
-
-                # magrittr %<>% ?
-                # Expression object for self._note_history[poly_id] ?
-                # Python sucks.
-
-                note = self.note_history[poly_id]
-                if not isinstance(note, int):
-                    LOG.error('Invalid note_off at %06X = %02X %s', prev_addr, poly_id, self.note_history)
-
-                self.note_history[poly_id] = OldNote(note)
-                insert('note_off', note=note)
-
+                self.note_off(ptr, ev)
 
 
             # **** CONTROL CHANGES
@@ -334,23 +482,23 @@ class BmsTrack(AttrDict):
             # **** DELAYS
 
             elif ev == 0x80:
-                insert('delay', dtime = ptr.u8())
+                insert(Delay, dtime = ptr.u8())
 
             elif ev == 0x88:
-                insert('delay', dtime = ptr.u16())
+                insert(Delay, dtime = ptr.u16())
 
             elif ev == 0xEA:
-                insert('delay', dtime = ptr.u24())
+                insert(Delay, dtime = ptr.u24())
             # TODO 0xCF
             elif ev == 0xF0:
-                insert('delay', dtime = ptr.vlq())
+                insert(Delay, dtime = ptr.vlq())
 
 
             # **** FALLBACK
 
             else:
                 text = 'unknown event %s' % b2h(ev)
-                LOG.warn(text)
+                LOG.warning(text)
                 insert(text)
                 stop = True
 
@@ -360,7 +508,7 @@ class BmsTrack(AttrDict):
             if stop:
                 break
 
-        assert HISTORY_MODE == 'LAZY'
+        # HISTORY_MODE == 'LAZY'
 
         return self
 
@@ -368,8 +516,10 @@ class BmsTrack(AttrDict):
         tracknum = ptr.u8()
         addr = ptr.u24()
 
+        LOG.warning('Track %d', tracknum)
+
         # Symlink
-        self.insert('child',
+        self.insert(Child,
                     tracknum=tracknum,
                     addr=addr
                     )
@@ -377,7 +527,7 @@ class BmsTrack(AttrDict):
         BmsTrack(self._file, addr, tracknum, None).parse()
 
     def call_jump(self, ev, ptr):
-        jumps = {0xC4: BmsTypes.call, 0xC8: BmsTypes.jump}
+        jumps = {0xC4: Call, 0xC8: Jump}
         evtype = jumps[ev]
 
         mode = BmsSeekMode(ptr.u8())
@@ -402,32 +552,47 @@ class BmsTrack(AttrDict):
         # 		(addr) Check preconditions and apply postconditions.
         # 		Note that OldNote compares == None.
 
-        assert HISTORY_MODE == 'LAZY'
-        if evtype == BmsTypes.call:
+        # HISTORY_MODE == 'LAZY'
+        if evtype == Call:
 
             if hist == Visit.NONE:
                 track = BmsTrack(self._file, addr, None, self.note_history).parse()
 
             else:
                 assert hist == Visit.BEGIN
-                # If we're recalling an address, we need to check pre-history and apply post-history.
 
-                # FIXME: .tracks maps tracknum to track.
-                # We need addr to track.
+                # **** ASSERTION ****
+                # We will encounter issues if any touched notes differ from the original call.
+
+                # TODO: We assume we're not calling into the middle of a visited section... :'(
                 track = self._file.track_at[addr]
 
-                # Ensure we're calling the function with same running notes.
-                if track.pre_history != self.note_history:
-                    LOG.error('Invalid call from %06X to %06X %s %s',
-                              self._prev_addr, addr, self.note_history, track.pre_history)
+                different = (track.pre_history != self.note_history)
+                if any(different & track.touched):
+                    LOG.error(
+'''Invalid call from %06X to %06X
+    new:%s
+    old:%s
+    out:%s
+    touched:%s''', self._prev_addr, addr, self.note_history, track.pre_history, track.note_history, track.touched)
 
 
-            # The subtrack has modified the note history. We must apply it here.
-            # track.post_history has been copied. This is intentional, as it should not be modified by the parent.
-            self.note_history[:] = track.note_history
+            # endif already visited
+
+            # BMS really shouldn't be touching notes, AND leaving running notes untouched...
+
+            if any(track.touched):
+                untouched = ~track.touched
+                if any(track.pre_history.astype(bool) & untouched):
+                    LOG.warning('Function leaves running notes untouched %s %s %s',
+                                track.touched, track.pre_history, track.note_history)
+
+            # Knowing that all "touched" entries entered identically...
+            # We must apply all "touched" entries of the note history.
+            self.note_history[track.touched] = track.note_history[track.touched]
 
 
-        elif evtype == 'jump':
+        elif evtype == Jump:
             if hist == Visit.NONE:
                 self._ptr.addr = addr
         else:
@@ -440,8 +605,10 @@ class BmsTrack(AttrDict):
 
         if ev == 0xA4:
             get = ptr.u8
+            LOG.info('instr_change u8')
         elif ev == 0xAC:
             get = ptr.u16
+            LOG.info('instr_change u16')
         else:
             assert False
 
@@ -453,10 +620,59 @@ class BmsTrack(AttrDict):
         elif ev2 == 0x21:
             ev2 = 'patch'
         else:
-            LOG.info('[instr %s] Unknown type %02X %02X', b2h(ev), ev2, value)
+            LOG.warning('[instr %s] Unknown type %02X value=%02X', b2h(ev), ev2, value)
             ev2 = 'unknown %s' % b2h(ev2)
 
-        self.insert('instr_change', ev2=ev2, value=value)
+        self.insert(InstrChange, ev2=ev2, value=value)
+
+
+    def note_on(self, ptr, ev):
+        poly_id = ptr.u8()
+        note = ev
+        velocity = ptr.u8()
+
+        self.insert(NoteOn,
+                    poly_id=poly_id,
+                    note=note,
+                    velocity=velocity
+                    )
+
+        self.touched[poly_id] = True
+
+
+        # Note history...
+
+        if poly_id not in range(1, 8):
+            LOG.error('Invalid poly_id at %06X = %02X (%02X v=%02X) %s',
+                      self._prev_addr, poly_id, note, velocity, self.note_history)
+
+        else:
+            old = self.note_history[poly_id]
+            if isinstance(old, int):
+                LOG.error('Double note_on at %06X = %02X (%02X v=%02X) %s',
+                          self._prev_addr, poly_id, note, velocity, self.note_history)
+            self.note_history[poly_id] = note
+
+
+    def note_off(self, ptr, ev):
+        poly_id = ev % 8
+
+        # magrittr %<>% ?
+        # Expression object for self._note_history[poly_id] ?
+        # Python sucks.
+
+        note = self.note_history[poly_id]
+
+        self.insert(NoteOff, note=note, poly_id=poly_id)
+
+        self.note_history[poly_id] = OldNote(note)
+        self.touched[poly_id] = True
+
+
+        # Error checking...
+
+        if not isinstance(note, int):
+            LOG.error('Double note_off at %06X = %02X %s', self._prev_addr, poly_id, self.note_history)
 
 
     def control_change(self, ptr, ev) -> BmsEvent:
@@ -495,10 +711,13 @@ class BmsTrack(AttrDict):
             LOG.info('[CC %s] Unknown control change %s = %s', b2h(ev), b2h(cctype), value)
             cctype = 'unknown %s' % b2h(cctype)
 
+        # LOG.info('control change - %s', cctype)
+        # # ', %02X, %02X', value, duration
+        # LOG.info('    value %s', 'u8 s8 s16'.split()[layout // 4])
+        # LOG.info('    duration %s', '0 ? u8 u16'.split()[layout % 4])
 
-        LOG.info('control change - %s, %02X, %02X', cctype, value, duration)
 
-        self.insert('control_change',
+        self.insert(ControlChange,
                     cctype=cctype,
                     value=value,
                     length=duration

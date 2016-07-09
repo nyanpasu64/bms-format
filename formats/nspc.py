@@ -2,7 +2,7 @@ import sys
 from contextlib import contextmanager
 from typing import Dict
 
-from formats.bms import BmsFile, BmsEvent, BmsTrack, BmsTypes
+from formats.bms import BmsFile, BmsEvent, BmsTrack, BmsNames
 from utils.classes import SeqError
 
 
@@ -23,11 +23,14 @@ def bms2amk(file: BmsFile):
     tracks = file['tracks']         # type: Dict[int, BmsTrack]
 
 
-    def parse_track(tracknum, track):
+    def parse_track(tracknum: int, track: BmsTrack):
         if tracknum == -1:
 
             for ev in track.bms_iter():
-                if ev == BmsTypes.
+                if ev.type == BmsNames.child:
+                    parse_track()
+
+
 
             return
 

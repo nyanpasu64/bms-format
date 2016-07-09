@@ -1,18 +1,28 @@
+from enum import Enum
+
+import numpy as np
 from ruamel import yaml
 from ruamel.yaml.representer import SafeRepresenter
 
-from formats.bms import BmsEvent, BmsTrack, BmsFile, BmsSeekMode
+from formats.bms import BmsEvent, BmsTrack, BmsFile, BmsSeekMode, OldNote
 from util import without, no_underscore
 from utils.classes import CC
 
 
-def represents(cls):
+def dumps(cls):
     def _represents(func):
         yaml.add_representer(cls, func)
         return func
     return _represents
 
-@represents(BmsEvent)
+def subs(cls):
+    def _subs(func):
+        yaml.add_multi_representer(cls, func)
+        return func
+    return _subs
+
+
+@subs(BmsEvent)
 def event_pres(dumper: SafeRepresenter, data):
 
     data = dict(data)
@@ -33,7 +43,7 @@ def event_pres(dumper: SafeRepresenter, data):
     return rep
 
 
-@represents(BmsTrack)
+@dumps(BmsTrack)
 def track_pres(dumper: SafeRepresenter, data: BmsTrack):
     data = no_underscore(data)
 
@@ -43,7 +53,7 @@ def track_pres(dumper: SafeRepresenter, data: BmsTrack):
 
     return dumper.represent_dict(data)
 
-@represents(BmsFile)
+@dumps(BmsFile)
 def file_pres(dumper: SafeRepresenter, data: BmsFile):
     data = no_underscore(data)
 
@@ -55,11 +65,21 @@ def file_pres(dumper: SafeRepresenter, data: BmsFile):
     return dumper.represent_dict(data)
 
 
-@represents(CC)
-@represents(BmsSeekMode)
+@dumps(OldNote)
+@subs(Enum)
 def track_pres(dumper: SafeRepresenter, data):
     return dumper.represent_str(str(data))
 
+
+@dumps(np.ndarray)
+def array_pres(dumper: SafeRepresenter, data):
+    flat = str(list(data))
+    return dumper.represent_str(flat)
+
+
+
+
+#### Actual dump.
 
 yaml.Dumper.ignore_aliases = lambda self, data: True
 

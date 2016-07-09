@@ -133,10 +133,11 @@ class Pointer:
 
     # self.bytes() raises OverlapError
     def _get_unsignedf(self, bits, endian):
+        nbytes = bits // 8
+
         def get_unsigned(mode:Visit = Visit.MIDDLE):
                 # endian=endian
 
-            nbytes = bits // 8
             data = self.bytes(nbytes, mode)
             return bytes2int(data, endian)
 
