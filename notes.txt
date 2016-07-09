@@ -1,0 +1,32 @@
+http://moonbase.rydia.net/mental/writings/programming/n-spc-reference/
+
+
+#### LOOPING
+
+0xEF initializes a loop command to another address.
+    0xEF: loop
+        u8 ctr
+            jump: ctr=0
+
+        u16 addr
+
+        # There is no limit to the number of loops in a N-SPC file.
+        # But AMK limits them for some reason.
+
+    0x00: end loop/track
+
+
+Where is loop data stored?
+    // We're in a loop now, which is represented as channel 8.
+Loop data is stored separately, but entered together in the .txt file.
+- So we'll paste the first occurrence of a called section into the loop body.
+
+Normal loop[] stored in Channel 8
+
+
+
+#### SUBLOOPS (AMK only)
+
+0xE6 0x00
+    loop...
+0xE6 #loops

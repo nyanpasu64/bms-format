@@ -1,6 +1,9 @@
 import logging
+import re
 
-LEVEL = logging.WARNING
+from utils.classes import AttrDict
+
+LEVEL = logging.INFO
 
 
 # https://stackoverflow.com/a/7622029/2683842
@@ -46,3 +49,23 @@ def dictify(**kwargs):
 def dict_from(root, **kwargs):
     """ a, b=x, c=y -> {a.b:x, a.c:y} """
     return {getattr(root, k): v for k, v in kwargs.items()}
+
+
+# Numpy array operations
+
+# def minus(a, b):
+#     return a & ~b
+
+
+
+first_cap_re = re.compile('(.)([A-Z][a-z]+)')
+all_cap_re = re.compile('([a-z0-9])([A-Z])')
+def uncamel(name):
+    s1 = first_cap_re.sub(r'\1_\2', name)
+    return all_cap_re.sub(r'\1_\2', s1).lower()
+
+
+# **** Closure introspection hack
+
+# def contents(f):
+#     return AttrDict({k: v.cell_contents for k,v in zip(f.__code__.co_freevars, f.__closure__)})
