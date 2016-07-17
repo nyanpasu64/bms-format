@@ -82,6 +82,7 @@ CC.PAN
 TODO: Recompile to BMS.
 '''
 
+
 # **** FLOW COMMANDS
 
 class Child(BmsType):       # new track
@@ -290,7 +291,7 @@ class BmsTrack(AttrDict):
         self.type = 'track'
         self.tracknum = tracknum
         self.addr = addr
-        # self.segments = []   # type: List[int]
+        self.segment = []       # type: List[BmsEvent]
 
 
         # Note history (for note_off commands)
@@ -365,14 +366,24 @@ class BmsTrack(AttrDict):
 
 
     def bms_iter(self):
-        ev = self._file.at[self.addr]   # type: BmsEvent
+
+        # TODO: Do we use segment-based or linked-list iteration?
+        # Segment-based iteration loses event address information!
+
+        it = iter(self.segment)
+        addr = self.addr
 
         while 1:
+            ev = self._file.at[addr]  # type: BmsEvent
+            ev_seg = next(it)
+
+            if ev != ev_seg:
+                LOG.error('BmsIter != segment at address %06X', addr)
+
             yield ev
 
             if 'next' in ev:
                 addr = ev.next
-                ev = self._file.at[addr]
             else:
                 break
 
@@ -393,6 +404,8 @@ class BmsTrack(AttrDict):
             event.next = self._ptr.addr
 
         event_at[addr] = event
+        self.segment.append(event)
+
 
     def parse(self) -> 'BmsTrack':
         insert = self.insert
