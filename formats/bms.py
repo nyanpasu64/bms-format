@@ -28,6 +28,7 @@ BMS2CC = dict_invert(CC2BMS)    # type: Dict[int, CC]
 # BmsType = Enum('')
 
 
+# TODO: remove BmsEvent
 class BmsEvent(AttrDict):
     def __init__(self, cmd: str, **evdata):
         super().__init__(**evdata)
@@ -52,9 +53,24 @@ class BmsType(BmsEvent):
         name = uncamel(type(self).__name__)
         super().__init__(name, **evdata)
 
+    def from_ptr(self, ptr: Pointer):
+        # abstract?
+        assert False
+
+    def to_hex(self):
+        assert False
+
+    def fix_pointers(self, file: BmsFile):
+        # TODO: fix type signature
+        # We need the new addresses of all events to repoint the pointers.
+        # NOT the numeric IDs (dict keys).
+        # We need to store key->address data.
+
+        pass
+
 
 # TODO: Maybe we should use class decorators to define types and parsers together!
-# Hooray for obfuscating the logical flow of the program!
+# Hooray for obfuscating the logical flow of the program!tra
 
 # Right now, my body methods already look like class __init__.
 # We should use a classmethod for track-pointer init. Otherwise, we can no longer
@@ -89,6 +105,8 @@ class Child(BmsType):       # new track
     if 0:
         tracknum = 0x00
         addr = 0x000000
+
+    def from_ptr
 
 
 class Call(BmsType):        # call address
@@ -688,7 +706,7 @@ class BmsTrack(AttrDict):
             LOG.error('Double note_off at %06X = %02X %s', self._prev_addr, poly_id, self.note_history)
 
 
-    def control_change(self, ptr, ev) -> BmsEvent:
+    def control_change(self, ptr, ev) -> ControlChange:
         # u8 cctype, [layout/4] value, [layout%4] duration
 
         #        duration
