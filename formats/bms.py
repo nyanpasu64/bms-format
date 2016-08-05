@@ -5,11 +5,9 @@ from enum import Enum
 from typing import Callable, Any, Union, Dict, List
 
 from util import LOG, b2h, dict_invert, dict_from, uncamel
-from utils.classes import CC, SeqError, AttrDict
+from utils.classes import CC, SeqError, AttrDict, Function
 from utils.pointer import Pointer, OverlapError
 from utils.pointer import Visit
-
-Function = Callable[..., Any]
 
 
 
@@ -28,37 +26,32 @@ BMS2CC = dict_invert(CC2BMS)    # type: Dict[int, CC]
 # BmsType = Enum('')
 
 
-# TODO: remove BmsEvent
-class BmsEvent(AttrDict):
-    def __init__(self, cmd: str, **evdata):
-        super().__init__(**evdata)
-
-        if False:
-            self.next = 0x000001
-            self.addr = 0x000000
-
-        self.type = cmd
-
 
 # **** EVENT CLASSES
 
-class BmsType(BmsEvent):
+class BmsType(AttrDict):
     """
-    Typed variant of BmsEvent.
     Automatically initializes "type" attribute based on subclass name.
     It's like structs and brace initialization in C, only worse.
     For Teh Autocompletez.
     """
     def __init__(self, **evdata):
-        name = uncamel(type(self).__name__)
-        super().__init__(name, **evdata)
+        super().__init__(**evdata)
 
-    def from_ptr(self, ptr: Pointer):
-        # abstract?
-        assert False
+        cmd = uncamel(type(self).__name__)
+        self.type = cmd
+
+        if False:
+            self.next = 0x000001
+            self.addr = 0x000000
+
+
+    @classmethod
+    def from_ptr(cls, file: BmsFile, ptr: Pointer):
+        raise NotImplementedError(type(cls).__name__)
 
     def to_hex(self):
-        assert False
+        raise NotImplementedError(type(self).__name__)
 
     def fix_pointers(self, file: BmsFile):
         # TODO: fix type signature
@@ -70,7 +63,7 @@ class BmsType(BmsEvent):
 
 
 # TODO: Maybe we should use class decorators to define types and parsers together!
-# Hooray for obfuscating the logical flow of the program!tra
+# Hooray for obfuscating the logical flow of the program!
 
 # Right now, my body methods already look like class __init__.
 # We should use a classmethod for track-pointer init. Otherwise, we can no longer
@@ -98,15 +91,55 @@ CC.PAN
 TODO: Recompile to BMS.
 '''
 
+parsers = {}    # type: Dict[int, BmsType]
+                # constructors :(
+
+
+def register(keys: Union[int, list]):
+
+    # should I move the list call into try?
+    # do I care if list(iter) raises TypeError?
+
+    try:
+        it = iter(keys)
+    except TypeError:
+        values = [keys]
+    else:
+        values = list(it)
+
+
+    def register_(cls: BmsType):
+        for _value in values:
+            parsers[_value] = cls
+        return cls
+    return register_
+
+
 
 # **** FLOW COMMANDS
 
+@register(0xC1)
 class Child(BmsType):       # new track
     if 0:
         tracknum = 0x00
         addr = 0x000000
 
-    def from_ptr
+    @classmethod
+    def from_ptr(cls, file: BmsFile, ptr: Pointer):
+        tracknum = ptr.u8()
+        addr = ptr.u24()
+
+        LOG.warning('Track %d', tracknum)
+
+        BmsTrack(self._file, addr, tracknum, None).parse()
+
+        # Symlink
+        return cls(
+            tracknum=tracknum,
+            addr=addr
+        )
+
+
 
 
 class Call(BmsType):        # call address
@@ -208,7 +241,7 @@ class BmsFile(AttrDict):
         # should Pointer know about the existence of BMS events? No?
 
         self._visited = [Visit.NONE] * len(data)    # type: List[Visit]
-        self.at = {}                                # type: Dict[int, BmsEvent]
+        self.at = {}                                # type: Dict[int, BmsType]
         self.tracks = {}                            # type: Dict[int, BmsTrack]
         self.track_at = {}                          # type: Dict[int, BmsTrack]
         # self.segments = {}                          # type: Dict[int, BmsSegment]
@@ -309,7 +342,7 @@ class BmsTrack(AttrDict):
         self.type = 'track'
         self.tracknum = tracknum
         self.addr = addr
-        self.segment = []       # type: List[BmsEvent]
+        self.segment = []       # type: List[BmsType]
 
 
         # Note history (for note_off commands)
@@ -392,7 +425,7 @@ class BmsTrack(AttrDict):
         addr = self.addr
 
         while 1:
-            ev = self._file.at[addr]  # type: BmsEvent
+            ev = self._file.at[addr]  # type: BmsType
             ev_seg = next(it)
 
             if ev != ev_seg:
@@ -417,7 +450,7 @@ class BmsTrack(AttrDict):
             event = evtype(**evdata)
         else:
             assert False
-            # event = BmsEvent(evtype, **evdata)
+            # event = BmsType(evtype, **evdata)
         if next:
             event.next = self._ptr.addr
 
@@ -543,17 +576,6 @@ class BmsTrack(AttrDict):
 
         return self
 
-    def child(self, ptr):
-        tracknum = ptr.u8()
-        addr = ptr.u24()
-
-        LOG.warning('Track %d', tracknum)
-
-        # Symlink
-        self.insert(Child,
-                    tracknum=tracknum,
-                    addr=addr
-                    )
 
         BmsTrack(self._file, addr, tracknum, None).parse()
 

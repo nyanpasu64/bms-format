@@ -1,0 +1,1 @@
+/mnt/debian/home/nyanpasu64/ROMS/gcwii/lozww/patch.sh

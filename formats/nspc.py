@@ -2,7 +2,7 @@ import sys
 from contextlib import contextmanager
 from typing import Dict
 
-from formats.bms import BmsFile, BmsEvent, BmsTrack, BmsNames
+from formats.bms import BmsFile, BmsType, BmsTrack, BmsNames
 from utils.classes import SeqError
 
 
@@ -19,7 +19,7 @@ def redirect(file):
 
 
 def bms2amk(file: BmsFile):
-    at = file['at']                 # type: Dict[int, BmsEvent]
+    at = file['at']                 # type: Dict[int, BmsType]
     tracks = file['tracks']         # type: Dict[int, BmsTrack]
 
 
