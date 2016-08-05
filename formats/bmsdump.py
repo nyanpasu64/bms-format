@@ -4,7 +4,7 @@ import numpy as np
 from ruamel import yaml
 from ruamel.yaml.representer import SafeRepresenter
 
-from formats.bms import BmsEvent, BmsTrack, BmsFile, BmsSeekMode, OldNote
+from formats.bms import BmsType, BmsTrack, BmsFile, BmsSeekMode, OldNote
 from util import without, no_underscore
 from utils.classes import CC
 
@@ -22,7 +22,7 @@ def subs(cls):
     return _subs
 
 
-@subs(BmsEvent)
+@subs(BmsType)
 def event_pres(dumper: SafeRepresenter, data):
 
     data = dict(data)

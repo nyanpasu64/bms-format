@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Callable, Any
 
 
 class CC(Enum):
@@ -27,3 +28,7 @@ class AttrDict(dict):
         """
         super().__init__(seq, **kwargs)
         self.__dict__ = self
+
+
+
+Function = Callable[..., Any]

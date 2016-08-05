@@ -4,6 +4,13 @@ c/bms3
 Audiores/Banks
 Audiores/Seqs/*.mid
 
+allfileshas.txt
+bigobjects.txt
+bigtosmall.txt
+
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -66,3 +73,6 @@ target/
 
 .idea/
 .c9/
+
+
+
