@@ -1,5 +1,7 @@
+from collections import OrderedDict
 from enum import Enum
 from typing import Callable, Any
+from functools import singledispatch, update_wrapper
 
 
 class CC(Enum):
@@ -28,6 +30,22 @@ class AttrDict(dict):
         """
         super().__init__(seq, **kwargs)
         self.__dict__ = self
+
+class OrderedAttrDict(OrderedDict):
+    def __init__(self, seq={}, **kwargs):
+        super().__init__(seq, **kwargs)
+        self.__dict__ = self
+
+
+def methdispatch(func):
+    dispatcher = singledispatch(func)
+
+    def wrapper(*args, **kw):
+        return dispatcher.dispatch(args[1].__class__)(*args, **kw)
+
+    wrapper.register = dispatcher.register
+    update_wrapper(wrapper, func)
+    return wrapper
 
 
 

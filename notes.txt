@@ -30,3 +30,11 @@ Normal loop[] stored in Channel 8
 0xE6 0x00
     loop...
 0xE6 #loops
+
+
+"""
+a = staticmethod(lambda: 123)
+
+a.__get__(object())()
+Out[12]: 123
+"""

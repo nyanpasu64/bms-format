@@ -99,7 +99,12 @@ class Pointer:
             if hist != Visit.NONE:
                 raise OverlapError
 
-        self.visited[old_idx:idx] = [mode] * length
+        if length <= 0:
+            raise ValueError('bytes() call, length %s (<= 0)' % length)
+
+        self.visited[old_idx:idx] = [Visit.MIDDLE] * length
+        self.visited[old_idx] = mode
+
         return self.data[old_idx:idx]
 
     def vlq(self):
@@ -108,10 +113,10 @@ class Pointer:
         while 1:
             # Assemble a multi-byte int.
             byte = self.u8()
-            next_delay = byte & 0x7f
+            sub = byte & 0x7f
 
             out <<= 7
-            out |= next_delay
+            out |= sub
 
             if byte & 0x80 == 0:
                 break
