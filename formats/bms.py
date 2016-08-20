@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Callable, Any, Union, Dict, List
 
 from util import LOG, b2h, dict_invert, dict_from, uncamel
-from utils.classes import CC, SeqError, AttrDict, Function
+from utils.classes import CC, SeqError, AttrDict, Function, OrderedAttrDict, methdispatch
 from utils.pointer import Pointer, OverlapError
 from utils.pointer import Visit
 
@@ -31,29 +31,36 @@ BMS2CC = dict_invert(CC2BMS)    # type: Dict[int, CC]
 
 class BmsType(AttrDict):
     """
+    __init__ takes **evdata.
+    from_ptr takes ptr and file:BmsFile (for new tracks).
+
     Automatically initializes "type" attribute based on subclass name.
     It's like structs and brace initialization in C, only worse.
     For Teh Autocompletez.
     """
+
+    if False:
+        next = 0x000001
+        addr = 0x000000
+
     def __init__(self, **evdata):
         super().__init__(**evdata)
 
         cmd = uncamel(type(self).__name__)
         self.type = cmd
 
-        if False:
-            self.next = 0x000001
-            self.addr = 0x000000
-
 
     @classmethod
-    def from_ptr(cls, file: BmsFile, ptr: Pointer):
-        raise NotImplementedError(type(cls).__name__)
+    def from_ptr(cls, ptr: Pointer):
+        raise NotImplementedError(cls.__name__)
+
+    def after(self, file: 'BmsFile', ptr: 'BmsPointer'):
+        pass
 
     def to_hex(self):
         raise NotImplementedError(type(self).__name__)
 
-    def fix_pointers(self, file: BmsFile):
+    def fix_pointers(self, file: 'BmsFile'):
         # TODO: fix type signature
         # We need the new addresses of all events to repoint the pointers.
         # NOT the numeric IDs (dict keys).
@@ -63,7 +70,6 @@ class BmsType(AttrDict):
 
 
 # TODO: Maybe we should use class decorators to define types and parsers together!
-# Hooray for obfuscating the logical flow of the program!
 
 # Right now, my body methods already look like class __init__.
 # We should use a classmethod for track-pointer init. Otherwise, we can no longer
@@ -91,8 +97,7 @@ CC.PAN
 TODO: Recompile to BMS.
 '''
 
-parsers = {}    # type: Dict[int, BmsType]
-                # constructors :(
+event_map = {}    # type: Dict[int, BmsType]
 
 
 def register(keys: Union[int, list]):
@@ -110,126 +115,30 @@ def register(keys: Union[int, list]):
 
     def register_(cls: BmsType):
         for _value in values:
-            parsers[_value] = cls
+            event_map[_value] = cls
         return cls
     return register_
 
 
+def get_event(ptr: Pointer) -> BmsType:
+    """ Create new event from pointer. """
+    ev = ptr.u8(mode=Visit.BEGIN)
 
-# **** FLOW COMMANDS
+    evtype = event_map[ev]
 
-@register(0xC1)
-class Child(BmsType):       # new track
-    if 0:
-        tracknum = 0x00
-        addr = 0x000000
+    event = evtype.from_ptr(ptr)
 
-    @classmethod
-    def from_ptr(cls, file: BmsFile, ptr: Pointer):
-        tracknum = ptr.u8()
-        addr = ptr.u24()
+    return event
 
-        LOG.warning('Track %d', tracknum)
-
-        BmsTrack(self._file, addr, tracknum, None).parse()
-
-        # Symlink
-        return cls(
-            tracknum=tracknum,
-            addr=addr
-        )
-
-
-
-
-class Call(BmsType):        # call address
-    if 0:
-        mode = BmsSeekMode(0x00)
-        addr = 0x000000
-
-
-class Jump(BmsType):
-    if 0:
-        mode = BmsSeekMode(0x00)
-        addr = 0x000000
-
-
-class EndTrack(BmsType):    # end track
-    pass
-
-
-class Pop(BmsType):         # pop address
-    pass
-
-
-# **** SPECIAL COMMANDS
-
-class InitTrack(BmsType):
-    if 0:
-        unknown = 0x0000
-
-
-class InstrChange(BmsType):
-    if 0:
-        ev2 = 'bank|patch'
-        value = 0x0001
-
-
-class TickRate(BmsType):
-    if 0:
-        value = 0x0010
-
-
-class Tempo(BmsType):
-    if 0:
-        value = 0x0010
-
-
-class WriteRemovePool(BmsType):
-    if 0:
-        unknown = 0x0000
-
-
-# **** NOTES
-
-class NoteOn(BmsType):
-    if 0:
-        poly_id = 1-7
-        note = 0x00
-        velocity = 0x00
-
-
-class NoteOff(BmsType):
-    if 0:
-        poly_id = 1-7
-        note = 0x00
-
-
-# **** CONTROL CHANGES
-
-class ControlChange(BmsType):
-    if 0:
-        cctype = CC
-        value = 1
-        length = 1
-
-
-# **** DELAYS
-
-class Delay(BmsType):
-    if 0:
-        dtime = 0x000000
-
-
-# **** FALLBACK
-
-# class UnknownEvent(BmsType):
-#     if 0:
-#         code = 0xFE
 
 # **** BMS :(
 
 class BmsFile(AttrDict):
+    """
+    Contains a dict of events.
+    Every track needs one!
+    """
+
     def __init__(self, data: bytes):
         super().__init__()
 
@@ -240,10 +149,10 @@ class BmsFile(AttrDict):
         # TODO Should they be combined?
         # should Pointer know about the existence of BMS events? No?
 
-        self._visited = [Visit.NONE] * len(data)    # type: List[Visit]
-        self.at = {}                                # type: Dict[int, BmsType]
-        self.tracks = {}                            # type: Dict[int, BmsTrack]
-        self.track_at = {}                          # type: Dict[int, BmsTrack]
+        self._visited = [Visit.NONE] * len(data)  # type: List[Visit]
+        self.at = {}  # type: Dict[int, BmsType]
+        self.tracks = {}  # type: Dict[int, BmsTrack]
+        self.track_at = {}  # type: Dict[int, BmsTrack]
         # self.segments = {}                          # type: Dict[int, BmsSegment]
 
     def parse(self):
@@ -309,6 +218,10 @@ class OldNote:
 
 HISTORY_MODE = ''
 class BmsTrack(AttrDict):
+    """
+    Contains tracknum and starting address of track.
+    May or may not contain segment[] of BmsType.
+    """
     # BmsPointer
 
     # BmsFile reference
@@ -575,7 +488,19 @@ class BmsTrack(AttrDict):
         # HISTORY_MODE == 'LAZY'
 
         return self
+    
 
+    def child(self, ptr):
+        tracknum = ptr.u8()
+        addr = ptr.u24()
+
+        LOG.warning('Track %d', tracknum)
+
+        # Symlink
+        self.insert(Child,
+                    tracknum=tracknum,
+                    addr=addr
+                    )
 
         BmsTrack(self._file, addr, tracknum, None).parse()
 
@@ -590,13 +515,14 @@ class BmsTrack(AttrDict):
                     mode=mode,
                     addr=addr)
 
-        # Call address?
+        # Assert that we aren't jumping into the middle of an instruction.
 
         hist = ptr.hist(addr)
 
         if hist == Visit.MIDDLE:
             raise OverlapError('%s %s - middle of command' % (jumps[ev], hex(addr)))
 
+        # We are either visiting NONE or BEGIN.
         # Jump: Visit target (if necessary), then continue.
         # Call
         # 	Not visited:
@@ -648,6 +574,8 @@ class BmsTrack(AttrDict):
         elif evtype == Jump:
             if hist == Visit.NONE:
                 self._ptr.addr = addr
+            else:
+                assert hist == Visit.BEGIN
         else:
             assert False
 
@@ -781,3 +709,176 @@ class BmsTrack(AttrDict):
 
         # def __iter__(self):
 
+
+
+
+
+
+
+    # **** BMS Event Types
+
+    @methdispatch
+    def after(self, event: BmsType):
+        pass
+
+
+    # **** FLOW COMMANDS
+
+    @register(0xC1)
+    class Child(BmsType):  # new track
+        if 0:
+            tracknum = 0x00
+            addr = 0x000000
+
+        @classmethod
+        def from_ptr(cls, ptr: Pointer):
+            d = cls()
+
+            d.tracknum = ptr.u8()
+            d.addr = ptr.u24()
+
+            LOG.warning('Track %d', d.tracknum)
+            return d
+
+    @after.register(Child)
+    def _(self, event: Child):
+        BmsTrack(self._file, event.addr, event.tracknum, None).parse()
+
+
+    class _CallJump(BmsType):
+        if 0:
+            mode = BmsSeekMode(0x00)
+            addr = 0x000000
+
+        @classmethod
+        def from_ptr(cls, ptr: Pointer):
+            d = cls()
+            d.mode = BmsSeekMode(ptr.u8())
+            d.addr = ptr.u24()
+
+            hist = ptr.hist(d.addr)
+            if hist == Visit.MIDDLE:
+                raise OverlapError('%s -> %s - middle of command' % (cls, hex(d.addr)))
+
+            assert hist in [Visit.NONE, Visit.BEGIN]
+            return d
+
+    @after.register(_CallJump)
+    def _(self, event: _CallJump):
+        raise NotImplementedError
+
+
+    @register(0xC4)
+    class Call(_CallJump):  # call address
+        def after(event, file: 'BmsFile', ptr: Pointer):
+            addr = event.addr
+            hist = ptr.hist(addr)
+
+            if hist == Visit.NONE:
+                track = BmsTrack(self._file, addr, None, self.note_history).parse()
+
+            else:
+                assert hist == Visit.BEGIN
+
+                # **** ASSERTION ****
+                # We will encounter issues if any touched notes differ from the original call.
+
+                # TODO: We assume we're not calling into the middle of a visited section... :'(
+                track = self._file.track_at[addr]
+
+                different = (track.pre_history != self.note_history)
+                if any(different & track.touched):
+                    LOG.error(
+                        '''Invalid call from %06X to %06X
+                            new:%s
+                            old:%s
+                            out:%s
+                            touched:%s''', self._prev_addr, addr, self.note_history, track.pre_history,
+                        track.note_history,
+                        track.touched)
+
+            # endif already visited
+
+            # BMS really shouldn't be touching notes, AND leaving running notes untouched...
+
+            if any(track.touched):
+                untouched = ~track.touched
+                if any(track.pre_history.astype(bool) & untouched):
+                    LOG.warning('Function leaves running notes untouched %s %s %s',
+                                track.touched, track.pre_history, track.note_history)
+
+            # Knowing that all "touched" entries entered identically...
+            # We must apply all "touched" entries of the note history.
+            self.note_history[track.touched] = track.note_history[track.touched]
+
+    class Jump(_CallJump):
+        def after(self, file: 'BmsFile', ptr: Pointer):
+            addr = self.addr
+            hist = ptr.hist(addr)
+
+            if hist == Visit.NONE:
+                ptr.addr = addr
+            else:
+                assert hist == Visit.BEGIN
+
+    class EndTrack(BmsType):  # end track
+        pass
+
+    class Pop(BmsType):  # pop address
+        pass
+
+    # **** SPECIAL COMMANDS
+
+    class InitTrack(BmsType):
+        if 0:
+            unknown = 0x0000
+
+    class InstrChange(BmsType):
+        if 0:
+            ev2 = 'bank|patch'
+            value = 0x0001
+
+    class TickRate(BmsType):
+        if 0:
+            value = 0x0010
+
+    class Tempo(BmsType):
+        if 0:
+            value = 0x0010
+
+    class WriteRemovePool(BmsType):
+        if 0:
+            unknown = 0x0000
+
+    # **** NOTES
+
+    class NoteOn(BmsType):
+        if 0:
+            poly_id = 1 - 7
+            note = 0x00
+            velocity = 0x00
+
+    class NoteOff(BmsType):
+        if 0:
+            poly_id = 1 - 7
+            note = 0x00
+
+    # **** CONTROL CHANGES
+
+    class ControlChange(BmsType):
+        if 0:
+            cctype = CC
+            value = 1
+            length = 1
+
+    # **** DELAYS
+
+    class Delay(BmsType):
+        if 0:
+            dtime = 0x000000
+
+    # **** FALLBACK
+
+    # class UnknownEvent(BmsType):
+    #     if 0:
+    #         code = 0xFE
