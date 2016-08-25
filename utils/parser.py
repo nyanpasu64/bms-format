@@ -139,6 +139,8 @@ Idea: Use Child() instance as parser.
 
 event_map = {}    # type: Dict[int, Event]
 
+# TODO: Each format should have its own event registry.
+
 @curry
 def register(op, eclass):
 
@@ -201,7 +203,7 @@ class Event:
         try:
             return self.__dict__['values'][item]
         except KeyError as e:
-            return AttributeError(e)
+            raise AttributeError(e)
 
 
 @register(0xC1)

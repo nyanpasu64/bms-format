@@ -33,6 +33,9 @@ def test_child_instance(event: Child):
     assert type(event) == Child
     assert event.parse is None
 
+    with pytest.raises(AttributeError):
+        print(event.nonexistent)
+
 
 # FIXME: Child() lacks event byte, breaks rebuilding. This will require redesign.
 def test_child_parse(event: Child):
