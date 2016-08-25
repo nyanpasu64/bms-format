@@ -24,35 +24,46 @@ def test_fields(ptr):
            [0x00, 0x017e, 0x7f8081, 0xfeff - 0x10000])
 
 
-def test_child_instance(ptr: Pointer):
-    child_event = Child.parse(ptr)
-    assert type(child_event) == Child
+@pytest.fixture
+def event(ptr: Pointer):
+    return Child.parse(ptr)
 
-    with pytest.raises(TypeError):
-        child_event.parse(ptr)
 
-    encoded = child_event.bin()
-    assert ptr.data.startswith(encoded)
+def test_child_instance(event: Child):
+    assert type(event) == Child
+    assert event.parse is None
 
 
 # FIXME: Child() lacks event byte, breaks rebuilding. This will require redesign.
-def test_child_parse(ptr: Pointer):
-    child_event = Child.parse(ptr)
-
-    assert child_event.tracknum == 0x00
-    assert child_event.addr == 0x017e7f
+def test_child_parse(event: Child):
+    assert event.tracknum == 0x00
+    assert event.addr == 0x017e7f
 
 
-def test_child_bin(ptr: Pointer):
-    event = Child.parse(ptr)
+def test_child_bin(ptr: Pointer, event: Child):
 
-    size = event.bigsize()
-    assert size == 5    # op + u8 + u24
+    # TODO: this is a MESS.
+    bigsize = event.bigsize()
+    smallsize = event.smallsize()
+    assert bigsize == 5    # u8 op, u8 tracknum, u24 addr
 
     output = event.bin()
-    assert len(output) == size
+    assert len(output) == bigsize
 
-    assert output == ptr.data[:size]
+    assert output[0] == event.op
+
+    # Our input data skips the op byte (it's handled by switch, not Child.parse())
+    # So skip the output op byte.
+    assert output[1:] == ptr.data[:smallsize]
+
+    encoded = event.bin()
+
+    # We parse an event body, but reencode the op and body.
+    nohead = encoded[1:]
+    assert ptr.data.startswith(nohead)
+
+
+
 
     # "after" functions?
     # TODO: getattr(self, '_' + Child.__name__)(event)
