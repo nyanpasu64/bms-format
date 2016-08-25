@@ -5,6 +5,8 @@ from typing import ByteString, List
 
 # todo save as json/protobuf
 
+def byte_aligned(bits):
+    assert bits % 8 == 0
 
 def wrap(val, bits):
     val %= 2 ** bits
@@ -18,6 +20,13 @@ def wrap(val, bits):
 
 def bytes2int(in_bytes, endian=False):
     return int.from_bytes(in_bytes, 'little' if endian else 'big')
+
+def byte(u8):
+    ERROR
+
+def int2bytes(value: int, bits, endian=False):
+    byte_aligned(bits)
+    return value.to_bytes(bits // 8, 'little' if endian else 'big')
 
 
 class OverlapError(ValueError):
@@ -66,10 +75,20 @@ class Pointer:
         self.s24 = self._get_signedf(24, endian)
         self.s32 = self._get_signedf(32, endian)
 
+    # Convenience method. Right now, only used in unit tests.
+    # TODO: BmsFile creates visited, BmsTrack creates pointers...
+    @classmethod
+    def create(cls, data: bytes, endian=False):
+        return cls(data,
+                   addr=0,
+                   visited=[Visit.NONE] * len(data),
+                   endian=endian)
+
     def seek(self, addr):
         data = self.data
 
-        if not isinstance(addr, int) or not (0 <= addr < len(data)):
+        # Seeking to EOF is allowed. Reading from EOF is not.
+        if not isinstance(addr, int) or addr not in range(len(data) + 1):
             raise ValueError('Invalid address {} / {}'.format(addr, len(data)))
 
         self.addr = addr
@@ -88,24 +107,27 @@ class Pointer:
         return self.visited[addr]
 
     def bytes(self, length, mode:Visit = Visit.MIDDLE):
-        old_idx = self.addr
-        self.addr += length
-        idx = self.addr
+        begin = self.addr
+        end = self.addr + length
 
-        if idx > len(self.data):
-            raise StopIteration
+        if end > len(self.data):
+            raise ValueError('end of file')
 
-        for hist in self.visited[old_idx:idx]:
+        # **** Don't read the same data twice.
+        # Keywords: Mode, Visit, OverlapError
+
+        for hist in self.visited[begin:end]:
             if hist != Visit.NONE:
                 raise OverlapError
 
         if length <= 0:
             raise ValueError('bytes() call, length %s (<= 0)' % length)
 
-        self.visited[old_idx:idx] = [Visit.MIDDLE] * length
-        self.visited[old_idx] = mode
+        self.addr = end
+        self.visited[begin:end] = [Visit.MIDDLE] * length
+        self.visited[begin] = mode
 
-        return self.data[old_idx:idx]
+        return self.data[begin:end]
 
     def vlq(self):
         out = 0
@@ -137,6 +159,8 @@ class Pointer:
         return self.magic(unhexlify(hexmagic))
 
     # self.bytes() raises OverlapError
+
+    # todo: interferes with Pycharm inspection. MAybe use parser?
     def _get_unsignedf(self, bits, endian):
         nbytes = bits // 8
 
@@ -156,3 +180,7 @@ class Pointer:
             )
 
         return get_signed
+
+
+class PandClick:    # TODO
+    pass
