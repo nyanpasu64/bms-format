@@ -1,3 +1,5 @@
+from collections import OrderedDict
+from copy import copy
 from typing import List, Dict
 
 from util import uncamel, getname, curry
@@ -26,6 +28,21 @@ class ParseError(ValueError):
 #         # <convert stuff here...>
 
 
+def get_range(bits: int, signed: bool):
+    max_unsigned = 2 ** bits
+
+    if signed:
+        unrange = max_unsigned // 2
+        minval = -unrange
+        maxval = unrange
+
+    else:
+        minval = 0
+        maxval = max_unsigned
+
+    return (minval, maxval)
+
+
 class Field:
 
     if 0:
@@ -41,42 +58,41 @@ class Field:
         raise NotImplementedError
 
 
-class _Number(Field):
-    def __init__(self, name: str, bits: int, signed: bool, endian=False):
-        self.name = name
+class Number(Field):
+    def __init__(self, bits: int, signed: bool, endian=False):
+        self.name = None
+
         self.type = 'us'[int(signed)] + str(bits)  # because screw strong typing
 
         byte_aligned(bits)
         self.bits = bits
+        self.minval, self.maxval = get_range(bits, signed)
+
         self.endian = endian
 
-        max_unsigned = 2 ** bits
+    def bin(self, value: int):
+        if int(value) != value:
+            raise ParseError('%s is not an integer' % value)
 
-        if signed:
-            unrange = max_unsigned // 2
-            self.minval = -unrange
-            self.maxval = unrange
-
-        else:
-            self.minval = 0
-            self.maxval = max_unsigned
-
-    def bin(self, value):
         if value not in range(self.minval, self.maxval):
             raise ParseError(
                 '%s (%s) does not fit in %s' % (value, hex(value), self.type)
             )
 
-        if int(value) != value:
-            raise ParseError('%s is not an integer' % value)
-
         return int2bytes(value, self.bits, self.endian)
 
+    # ugly hack so u8 can parse/bin, as well as u8('name')
+    def __call__(self, name: str):
+        out = copy(self)
+        out.name = name
+        out.__call__ = None
+        return out
 
-def get_number(bits: int, signed: bool, endian=False):
-    def _get_number(name: str = None):
-        return _Number(name, bits, signed, endian)
-    return _get_number
+
+# def get_number(bits: int, signed: bool, endian=False):
+#     def _get_number(name: str = None):
+#         return _Number(bits, signed, endian)
+#     return _get_number
 
 
 """
@@ -90,17 +106,17 @@ for signed in range(False, True+1):
 
 """
 
-# type: _Number
+# type: Number
 
-u8 = get_number(8, signed=False, endian=ENDIAN)
-u16 = get_number(16, signed=False, endian=ENDIAN)
-u24 = get_number(24, signed=False, endian=ENDIAN)
-u32 = get_number(32, signed=False, endian=ENDIAN)
+u8 = Number(8, signed=False, endian=ENDIAN)
+u16 = Number(16, signed=False, endian=ENDIAN)
+u24 = Number(24, signed=False, endian=ENDIAN)
+u32 = Number(32, signed=False, endian=ENDIAN)
 
-s8 = get_number(8, signed=True, endian=ENDIAN)
-s16 = get_number(16, signed=True, endian=ENDIAN)
-s24 = get_number(24, signed=True, endian=ENDIAN)
-s32 = get_number(32, signed=True, endian=ENDIAN)
+s8 = Number(8, signed=True, endian=ENDIAN)
+s16 = Number(16, signed=True, endian=ENDIAN)
+s24 = Number(24, signed=True, endian=ENDIAN)
+s32 = Number(32, signed=True, endian=ENDIAN)
 
 
 """
@@ -142,7 +158,9 @@ class Event:
         op = None
 
     def __init__(self, ptr: Pointer):
-        self.values = {field.name: field.parse(ptr) for field in self.keys}
+        self.values = OrderedDict(
+            (field.name, field.parse(ptr)) for field in self.keys
+        )
 
         # Event instances currently hold data. We don't want them to parse new data.
         self.parse = None
@@ -157,9 +175,7 @@ class Event:
         """ Encodes current event to ID + fields. """
 
         data = bytearray()
-        data += int2bytes(self.op, 8)
-                # TODO u8().bin(self.op)
-                # TODO u8.bin(self.op) (@classmethod u8.__call__() produces new named copy)
+        data += u8.bin(self.op)
 
         for field in self.keys:
             value = self.values[field.name]
