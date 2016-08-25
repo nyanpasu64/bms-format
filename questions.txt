@@ -1,0 +1,24 @@
+I'm trying to create a parsing framework for Gamecube MIDI-like files. Each track is made of events: note on, note off, volume, new child track, etc. They are stored as a single byte for event type, then event-determined binary data, repeat.
+
+I have a Pointer() class holding a byte array, along with methods that produces various-length integers. All my pointers all share a single list, recording which addresses have been read out or not. I use it to catch bugs or parser design flaws (the same address should never be parsed twice, and you should never jump into the middle of an existing instruction).
+
+I have some methods ^W classes ^W methods where I read data from the pointer, convert bytes into different types or enums, and change parser state (jump to addresses, record playing notes.) as necessary.
+
+Should I put "change parser state" code in the parser (long if-else statement), next to the class (@register twice, duplication, bugs), or just pass "parser.self" into "event_type.method()" (f*ck scopes)?
+
+- well forget the if-else. should my event type parsers be declared as classes, or functions (as in construct)? is it a good idea to place event parser classes inside the main parsing loop class, and add "_event_name" methods in the big class, then getattr(self, '_' + getname(event_class))?
+
+
+Should I split "read ints" and "convert ints into enums" into two separate steps, as the construct library does? (note I'm not too familiar with construct)
+I read the event byte in the main parser, then call a specific event parser. Earlier I used an if-else statement. Now I'm trying to use "@register(0x01)" to associate event classes with numbers. Good idea?
+
+Now I'm trying to write out files. I looked into construct library, but it doesn't support 24-bit integers (unsupported by Python struct. I could add using int.from_bytes and int().to_bytes, if I wanted to), and it doesn't track pointer visit-or-not. Maybe my Pointer() class shouldn't be responsible for that?
+
+Also the construct library seems to mostly handle fixed file formats and switch statements, not so much running a function whenever you encounter a specific struct. (Am I wrong?) But I want to define [byte structure, Python object structure, and behavior when encountering the structure] in a single class. Is this a good idea?
+
+
+
+
+So I've been trying to write my own library. Each event is a class
+
+https://gist.github.com/nyanpasu64/66b906941fe269004374f912be200226
