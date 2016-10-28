@@ -63,6 +63,8 @@ def dict_invert(d: dict):
 def dictify(**kwargs):
     return kwargs
 
+D = dictify
+
 
 def dict_from(root, **kwargs):
     """ a, b=x, c=y -> {a.b:x, a.c:y} """

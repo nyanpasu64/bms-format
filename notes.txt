@@ -38,3 +38,5 @@ a = staticmethod(lambda: 123)
 a.__get__(object())()
 Out[12]: 123
 """
+
+TODO: replace classes with attrdicts. replace methods with single dispatch functions. use class decorator to extract methods from classes.

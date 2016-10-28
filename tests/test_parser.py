@@ -26,24 +26,23 @@ def test_fields(ptr):
 
 @pytest.fixture
 def event(ptr: Pointer):
-    return Child.parse(ptr)
+    return MockChild.parse(ptr)
 
 
-def test_child_instance(event: Child):
-    assert type(event) == Child
+def test_child_instance(event: MockChild):
+    assert type(event) == MockChild
     assert event.parse is None
 
     with pytest.raises(AttributeError):
         print(event.nonexistent)
 
 
-# FIXME: Child() lacks event byte, breaks rebuilding. This will require redesign.
-def test_child_parse(event: Child):
+def test_child_parse(event: MockChild):
     assert event.tracknum == 0x00
     assert event.addr == 0x017e7f
 
 
-def test_child_bin(ptr: Pointer, event: Child):
+def test_child_bin(ptr: Pointer, event: MockChild):
 
     # TODO: this is a MESS.
     bigsize = event.bigsize()
@@ -72,9 +71,6 @@ def test_child_bin(ptr: Pointer, event: Child):
     # TODO: getattr(self, '_' + Child.__name__)(event)
 
 
-
-# class Child:
-#     op = 0x01
 
 """
 IDEA: Multiple decodings from one class????
