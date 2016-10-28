@@ -1,0 +1,52 @@
+In BMS, note history is preserved through function calls.
+	24354 turns 1 on. Pop.
+	24361 turns 2 on. 24364 turns 1 off.
+
+As a result, we pass track.hist to tracks.
+(Return), track.hist[:] = track.hist
+All passes are done by value. (subject to change)
+
+- Call a function with one set of playing notes,
+- End with another set.
+
+Partial solution: At each address, check preconditions (note_history) and apply postconditions.
+	- If repeat_note command, then None vs. OldNote may be a problem.
+
+- To prevent pre_history from being modified, we must np.copy(parent note_history).
+
+- No function (in Dragon Roost theme) uses same note-off on multiple pitches.
+- One function (volume fadeout) was called with different running notes, but did not touch them.
+
+We can build a system to accommodate notes that overlap functions, and functions that don't touch notes.
+The system will reject functions that uses the same note-off on multiple pitches.
+
+# SIMULATION (bad)
+
+Every time a note_off occurs, make sure it's the same pitch.
+
+class RepeatTrack(BmsTrack):
+	def i(): pass
+	def note_off():
+		bms_assert(at[].note == current note)
+
+
+# ASSERTION
+
+Record which poly_ids are "touched" (on or off).
+We will encounter issues if any touched notes differ from the original call.
+This is equivalent but MUCH faster than simulation.
+
+different = (np.array(track.pre_history) != track.note_history)
+if any(different & track.touched):
+	LOG.error(...)
+
+
+# FULL SOLUTION?
+For calls (not jumps), repeat the entire call. When differently pitched note_offs occur,
+you can't record them under the same at[]. So this won't work.
+
+# GIVE UP
+Store note-off events natively.
+	Kicking the can down the road. This won't help translating to other file formats.
+
+The only full solution is flattening the file.

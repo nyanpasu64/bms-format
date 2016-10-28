@@ -3,6 +3,7 @@ from copy import copy
 from typing import List, Dict
 
 from util import uncamel, getname, curry
+from utils.classes import OrderedAttrDict
 from utils.pointer import Pointer, int2bytes, byte_aligned
 
 ENDIAN = False  # TODO configurable default endian
@@ -141,12 +142,14 @@ event_map = {}    # type: Dict[int, Event]
 
 # TODO: Each format should have its own event registry.
 
+
 @curry
-def register(op, eclass):
+def register(op, eclass: 'Event'):
 
     # If we register the same event to multiple hex codes,
     # it doesn't know how to bin itself.
     assert not hasattr(eclass, 'op')
+    assert issubclass(eclass, Event)
 
     eclass.op = op
     event_map[op] = eclass
@@ -159,10 +162,15 @@ class Event:
         values = {}     # type: Dict[str, int]
         op = None
 
+    extras = {}  # type: Dict[str, object]
+
     def __init__(self, ptr: Pointer):
+        # FIXME: OrderedAttrDict????
         self.values = OrderedDict(
             (field.name, field.parse(ptr)) for field in self.keys
         )
+
+        self.values.update(**self.extras)
 
         # Event instances currently hold data. We don't want them to parse new data.
         self.parse = None
@@ -199,16 +207,28 @@ class Event:
     def bigsize(self):
         return self.smallsize() + 1
 
+    # TODO: .getattr or getitem[]?
     def __getattr__(self, item):
         try:
             return self.__dict__['values'][item]
         except KeyError as e:
             raise AttributeError(e)
 
+    __getitem__ = __getattr__
+
+    # FIXME: mutating bypasses self.values[]!
+    # ...dammit confusion between methods and fields...
+
+    def __setitem__(self, key, value):
+        self.values[key] = value
+
 
 @register(0xC1)
-class Child(Event):
-    keys = [
-        u8('tracknum'),
-        u24('addr'),
-    ]
+class MockChild(Event):
+    keys = [u8('tracknum'), u24('addr')]
+
+
+# class Child:
+   #     op = 0x01
+# TODO: Maybe Child() produces an AttrDict which is binned using Event.bin(event)????
+# This would eliminate get/set attribute-item issues.
